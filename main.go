@@ -21,9 +21,19 @@ func main() {
 		log.Fatalf("please set PGCONN")
 	}
 
-	_, err := sql.Open("postgres", pgConn)
+	db, err := sql.Open("postgres", pgConn)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	// Execute the SQL statement
+	_, err = db.Exec(`
+CREATE TABLE IF NOT EXISTS links (
+    short VARCHAR(100) PRIMARY KEY,
+    long VARCHAR(255) NOT NULL
+);`)
+	if err != nil {
+		log.Fatalf("Failed to create table: %v", err)
 	}
 
 	bind := fmt.Sprintf(":%s", port)
