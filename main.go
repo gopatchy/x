@@ -7,14 +7,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	_ "github.com/lib/pq"
+	"golang.org/x/exp/rand"
 )
 
 type ShortLinks struct {
 	tmpl *template.Template
 	mux  *http.ServeMux
 	db   *sql.DB
+	r    *rand.Rand
 }
 
 type response struct {
@@ -33,6 +36,7 @@ func NewShortLinks(db *sql.DB) (*ShortLinks, error) {
 		tmpl: tmpl,
 		mux:  http.NewServeMux(),
 		db:   db,
+		r:    rand.New(rand.NewSource(uint64(time.Now().UnixNano()))),
 	}
 
 	sl.mux.HandleFunc("GET /{$}", sl.serveRoot)
@@ -88,6 +92,14 @@ func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
 
 	short := r.Form.Get("short")
 
+	if short == "" {
+		short, err = sl.genShort()
+		if err != nil {
+			sendError(w, http.StatusInternalServerError, "genShort: %s", err)
+			return
+		}
+	}
+
 	long := r.Form.Get("long")
 	if long == "" {
 		sendError(w, http.StatusBadRequest, "long= param required")
@@ -108,6 +120,30 @@ DO UPDATE SET long = $2;
 	sendJSON(w, response{
 		Short: short,
 	})
+}
+
+func (sl *ShortLinks) genShort() (string, error) {
+	for chars := 3; chars <= 10; chars++ {
+		b := make([]byte, chars)
+
+		for i := range b {
+			b[i] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"[sl.r.Intn(62)]
+		}
+
+		short := string(b)
+
+		exists := false
+		err := sl.db.QueryRow("SELECT EXISTS(SELECT 1 FROM links WHERE short = $1)", short).Scan(&exists)
+		if err != nil {
+			return "", fmt.Errorf("check exists: %w", err)
+		}
+
+		if !exists {
+			return short, nil
+		}
+	}
+
+	return "", fmt.Errorf("no available short link found")
 }
 
 func main() {

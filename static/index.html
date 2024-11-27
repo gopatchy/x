@@ -87,7 +87,10 @@ async function set() {
 
     document.getElementById('short-icon').setAttribute('name', 'check-square-fill');
     document.getElementById('long-icon').setAttribute('name', 'check-square-fill');
-    setShortItem(short, 'check-square-fill');
+
+    if (short != '') {  
+        setShortItem(short, 'check-square-fill');
+    }
 
     const params = new URLSearchParams();
     params.set('short', short);
@@ -98,14 +101,16 @@ async function set() {
     });
 
     if (resp.status !== 200) {
-        error('Failed to set', await resp.text());
+        error('Failed to set', (await resp.json()).message);
         return;
     }
+
+    const newShort = (await resp.json()).short;
 
     if (document.getElementById('short').value == short && document.getElementById('long').value == long) {
         document.getElementById('short-icon').setAttribute('name', 'check-square');
         document.getElementById('long-icon').setAttribute('name', 'check-square');
-        setShortItem(short, 'check-square');
+        setShortItem(newShort, 'check-square');
     }
 }
 
