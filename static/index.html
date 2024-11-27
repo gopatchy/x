@@ -1,0 +1,221 @@
+<!doctype html>
+<html>
+	<head>
+		<style>
+:not(:defined) {
+  visibility: hidden;
+}
+
+body {
+	font: 12px var(--sl-font-mono);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+sl-icon[name="type"] {
+    color: var(--sl-color-danger-500);
+}
+
+sl-icon[name="square"] {
+    color: var(--sl-color-warning-500);
+}
+
+sl-icon[name="check-square"] {
+    color: var(--sl-color-success-500);
+}
+
+sl-icon[name="check-square-fill"] {
+    color: var(--sl-color-success-500);
+}
+		</style>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link
+				rel="stylesheet"
+				media="(prefers-color-scheme:light)"
+				href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/themes/light.css"
+				/>
+		<link
+				rel="stylesheet"
+				media="(prefers-color-scheme:dark)"
+				href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/themes/dark.css"
+				onload="document.documentElement.classList.add('sl-theme-dark');"
+				/>
+		<script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/shoelace-autoloader.js"></script>
+        <script>
+function setInputIcon(val, icon) {
+    if (val.length > 0) {
+        icon.setAttribute('name', 'square');
+    } else {
+        icon.setAttribute('name', 'type');
+    }
+}
+
+function setInputIcons() {
+    setInputIcon(
+        document.getElementById('short').value,
+        document.getElementById('short-icon'),
+    );
+
+    setInputIcon(
+        document.getElementById('long').value,
+        document.getElementById('long-icon'),
+    );
+}
+
+function clearAlerts() {
+    document.getElementById('err').hide();
+}
+
+function error(err1, err2) {
+	clearAlerts();
+
+	document.getElementById('err1').innerText = err1;
+	document.getElementById('err2').innerText = err2;
+	document.getElementById('err').show();
+}
+
+async function set() {
+    const short = document.getElementById('short').value;
+    const long = document.getElementById('long').value;
+
+    if (long == '') {
+        error('Unable to set', 'Long URL is required');
+        return;
+    }
+
+    document.getElementById('short-icon').setAttribute('name', 'check-square-fill');
+    document.getElementById('long-icon').setAttribute('name', 'check-square-fill');
+    setShortItem(short, 'check-square-fill');
+
+    const params = new URLSearchParams();
+    params.set('short', short);
+    params.set('long', long);
+
+    const resp = await fetch(`./?${params.toString()}`, {
+        method: 'POST',
+    });
+
+    if (resp.status !== 200) {
+        error('Failed to set', await resp.text());
+        return;
+    }
+
+    if (document.getElementById('short').value == short && document.getElementById('long').value == long) {
+        document.getElementById('short-icon').setAttribute('name', 'check-square');
+        document.getElementById('long-icon').setAttribute('name', 'check-square');
+        setShortItem(short, 'check-square');
+    }
+}
+
+function setShortItem(short, icon) {
+    const tree = document.getElementById('tree');
+
+    for (const item of tree.children) {
+        if (item.textContent == short) {
+            tree.removeChild(item);
+        }
+    }
+
+    const item = document.createElement('sl-tree-item');
+    item.appendChild(document.createElement('sl-icon')).setAttribute('name', icon);
+    item.appendChild(document.createTextNode(short));
+    tree.insertBefore(item, tree.firstChild);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('short').setAttribute('label', `${window.location.host}/`);
+
+    document.getElementById('short').addEventListener('sl-input', () => {
+        clearAlerts();
+        setInputIcons();
+    });
+
+    document.getElementById('short').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            set();
+        }
+    });
+
+    document.getElementById('short').addEventListener('paste', () => {
+        if (document.getElementById('long').value != '') {
+            setTimeout(() => set(), 0);
+        }
+    });
+
+    document.getElementById('short-icon').addEventListener('click', () => {
+        set();
+    });
+
+
+    document.getElementById('long').addEventListener('sl-input', () => {
+        clearAlerts();
+        setInputIcons();
+    });
+
+    document.getElementById('long').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            set();
+        } else {
+            document.getElementById('tree').replaceChildren();
+        }
+    });
+
+    document.getElementById('long').addEventListener('paste', () => {
+        if (document.getElementById('short').value != '') {
+            setTimeout(() => set(), 0);
+        }
+    });
+
+    document.getElementById('long-icon').addEventListener('click', () => {
+        set();
+    });
+
+
+    document.getElementById('set').addEventListener('click', () => {
+        set();
+    });
+
+
+    document.getElementById('long').focus();
+});
+
+// name="type"
+// name="circle"
+// name="check-circle"
+        </script>
+	</head>
+	<body>
+        <div id="container" style="width: min(500px, calc(100vw - 10px))">
+            <sl-input id="short">
+                <sl-icon id="short-icon" name="type" slot="suffix"></sl-icon>
+            </sl-input>
+            <br/>
+            <sl-input id="long" label="⟶">
+                <sl-icon id="long-icon" name="type" slot="suffix"></sl-icon>
+            </sl-input>
+
+            <br />
+            <br />
+
+            <div style="text-align: center;">
+                <sl-button variant="primary" id="set">Set</sl-button>
+            </div>
+
+            <br />
+            <br />
+
+            <sl-alert id="err" variant="danger">
+                <sl-icon slot="icon" name="exclamation-octagon"></sl-icon>
+                <strong id="err1"></strong><br />
+                <span id="err2"></span>
+            </sl-alert>
+
+            <br />
+            <br />
+
+            <sl-tree id="tree">
+            </sl-tree>
+        </div>
+	</body>
+</html>
