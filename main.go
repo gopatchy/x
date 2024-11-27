@@ -48,8 +48,13 @@ func (sl *ShortLinks) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (sl *ShortLinks) serveRoot(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s", r.RemoteAddr, r.URL.Path)
+	sl.serveRootWithPath(w, r, "")
+}
 
-	err := sl.tmpl.Execute(w, nil)
+func (sl *ShortLinks) serveRootWithPath(w http.ResponseWriter, r *http.Request, path string) {
+	err := sl.tmpl.Execute(w, map[string]any{
+		"path": path,
+	})
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "error executing template: %s", err)
 		return
@@ -57,7 +62,19 @@ func (sl *ShortLinks) serveRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sl *ShortLinks) serveShort(w http.ResponseWriter, r *http.Request) {
-	sendError(w, http.StatusNotImplemented, "not implemented")
+	log.Printf("%s %s", r.RemoteAddr, r.URL.Path)
+
+	short := r.PathValue("short")
+
+	row := sl.db.QueryRow(`SELECT long FROM links WHERE short = $1`, short)
+	var long string
+	err := row.Scan(&long)
+	if err != nil {
+		sl.serveRootWithPath(w, r, short)
+		return
+	}
+
+	http.Redirect(w, r, long, http.StatusTemporaryRedirect)
 }
 
 func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
@@ -78,10 +95,10 @@ func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = sl.db.Exec(`
-		INSERT INTO links (short, long)
-		VALUES ($1, $2)
-		ON CONFLICT (short)
-		DO UPDATE SET long = $2
+INSERT INTO links (short, long)
+VALUES ($1, $2)
+ON CONFLICT (short)
+DO UPDATE SET long = $2;
 	`, short, long)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "upsert: %s", err)
