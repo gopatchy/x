@@ -111,6 +111,7 @@ async function set() {
         document.getElementById('short-icon').setAttribute('name', 'check-square');
         document.getElementById('long-icon').setAttribute('name', 'check-square');
         setShortItem(newShort, 'check-square');
+        await navigator.clipboard.writeText(`${window.location.origin}/${newShort}`);
     }
 }
 
@@ -124,8 +125,15 @@ function setShortItem(short, icon) {
     }
 
     const item = document.createElement('sl-tree-item');
+    const url = `${window.location.origin}/${short}`;
     item.appendChild(document.createElement('sl-icon')).setAttribute('name', icon);
     item.appendChild(document.createTextNode(short));
+
+    const copy = document.createElement('sl-copy-button');
+    copy.setAttribute('value', url);
+    copy.style.color = 'var(--sl-color-neutral-300)';
+    item.appendChild(copy);
+
     tree.insertBefore(item, tree.firstChild);
 }
 
