@@ -165,7 +165,7 @@ func main() {
 	_, err = db.Exec(`
 CREATE TABLE IF NOT EXISTS links (
     short VARCHAR(100) PRIMARY KEY,
-    long VARCHAR(255) NOT NULL
+    long TEXT NOT NULL
 );`)
 	if err != nil {
 		log.Fatalf("Failed to create table: %v", err)
