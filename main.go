@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -15,13 +14,14 @@ import (
 type ShortLinks struct {
 	tmpl *template.Template
 	mux  *http.ServeMux
+	db   *sql.DB
 }
 
 type response struct {
 	Short string `json:"short"`
 }
 
-func NewShortLinks() (*ShortLinks, error) {
+func NewShortLinks(db *sql.DB) (*ShortLinks, error) {
 	tmpl := template.New("index.html")
 
 	tmpl, err := tmpl.ParseFiles("static/index.html")
@@ -32,6 +32,7 @@ func NewShortLinks() (*ShortLinks, error) {
 	sl := &ShortLinks{
 		tmpl: tmpl,
 		mux:  http.NewServeMux(),
+		db:   db,
 	}
 
 	sl.mux.HandleFunc("GET /{$}", sl.serveRoot)
@@ -76,7 +77,16 @@ func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	time.Sleep(1 * time.Second)
+	_, err = sl.db.Exec(`
+		INSERT INTO links (short, long)
+		VALUES ($1, $2)
+		ON CONFLICT (short)
+		DO UPDATE SET long = $2
+	`, short, long)
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, "upsert: %s", err)
+		return
+	}
 
 	sendJSON(w, response{
 		Short: short,
@@ -108,7 +118,7 @@ CREATE TABLE IF NOT EXISTS links (
 		log.Fatalf("Failed to create table: %v", err)
 	}
 
-	sl, err := NewShortLinks()
+	sl, err := NewShortLinks(db)
 	if err != nil {
 		log.Fatalf("Failed to create shortlinks: %v", err)
 	}
