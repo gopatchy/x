@@ -152,7 +152,7 @@ func (sl *ShortLinks) serveSuggest(w http.ResponseWriter, r *http.Request) {
 	user := strings.Join(r.Form["short"], "\n")
 
 	comp, err := sl.oai.completeChat(
-		"You are an assistant helping a user choose useful short names for a URL shortener. The request contains a list recents names chosen by the user, separated by newlines, with the most recent names first. Respond with only a list of possible suggestions for additional short names, separated by newlines. Suggestions may include conceptual variations of the names provided, plural/singular variations, hyphenation variations, or other variations that are likely to be useful. Your bar for suggestions should be relatively high; responding with a short list of high quality suggestions is preferred.",
+		"You are an assistant helping a user choose useful short names for a URL shortener. The request contains a list recents names chosen by the user, separated by newlines, with the most recent names first. Respond with only a list of possible suggestions for additional short names, separated by newlines. In descending order of preference, suggestions should include: plural/singular variations, 2 and 3 letter abbreivations, conceptual variations, other variations that are likely to be useful. Your bar for suggestions should be relatively high; responding with a shorter list of high quality suggestions is preferred.",
 		user,
 	)
 	if err != nil {
