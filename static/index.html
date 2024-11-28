@@ -142,6 +142,10 @@ function set(short, long) {
         if (document.getElementById('short').value == oldShort && document.getElementById('long').value == oldLong) {
             await navigator.clipboard.writeText(`${window.location.origin}/${newShort}`);
         }
+    }).catch((err) => {
+        setTimeout(() => {
+            set(short, long);
+        }, 5000);
     });
 
     const suggestParams = new URLSearchParams();
@@ -159,7 +163,7 @@ function set(short, long) {
         for (const short of (await resp.json()).shorts) {
             appendShortItem(short, long);
         }
-    });
+    }).catch((err) => {});
 }
 
 function setShortItem(short, icon) {
