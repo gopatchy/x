@@ -13,6 +13,22 @@ body {
 	align-items: center;
 }
 
+sl-input {
+    margin-bottom: 10px;
+}
+
+sl-button {
+    margin-top: 10px;
+}
+
+sl-alert {
+    margin-top: 20px;
+}
+
+sl-tree {
+    margin-top: 20px;
+}
+
 sl-icon[name="type"] {
     color: var(--sl-color-danger-500);
 }
@@ -256,29 +272,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             <sl-input id="short" value="{{ .path }}">
                 <sl-icon id="short-icon" name="type" slot="suffix"></sl-icon>
             </sl-input>
-            <br/>
+
             <sl-input id="long" label="⟶" type="url">
                 <sl-icon id="long-icon" name="type" slot="suffix"></sl-icon>
             </sl-input>
 
-            <br />
-            <br />
-
-            <div style="text-align: center;">
+            <div style="text-align: center; margin-top: 10px;">
                 <sl-button variant="primary" id="set">Set</sl-button>
             </div>
-
-            <br />
-            <br />
 
             <sl-alert id="err" variant="danger">
                 <sl-icon slot="icon" name="exclamation-octagon"></sl-icon>
                 <strong id="err1"></strong><br />
                 <span id="err2"></span>
             </sl-alert>
-
-            <br />
-            <br />
 
             <sl-tree id="tree">
             </sl-tree>
