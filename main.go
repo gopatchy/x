@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -18,10 +19,15 @@ type ShortLinks struct {
 	mux  *http.ServeMux
 	db   *sql.DB
 	r    *rand.Rand
+	oai  *oaiClient
 }
 
-type response struct {
+type setResponse struct {
 	Short string `json:"short"`
+}
+
+type suggestResponse struct {
+	Shorts []string `json:"shorts"`
 }
 
 func NewShortLinks(db *sql.DB) (*ShortLinks, error) {
@@ -32,16 +38,23 @@ func NewShortLinks(db *sql.DB) (*ShortLinks, error) {
 		return nil, fmt.Errorf("static/index.html: %w", err)
 	}
 
+	oai, err := newOAIClientFromEnv()
+	if err != nil {
+		return nil, fmt.Errorf("newOAIClientFromEnv: %w", err)
+	}
+
 	sl := &ShortLinks{
 		tmpl: tmpl,
 		mux:  http.NewServeMux(),
 		db:   db,
 		r:    rand.New(rand.NewSource(uint64(time.Now().UnixNano()))),
+		oai:  oai,
 	}
 
 	sl.mux.HandleFunc("GET /{$}", sl.serveRoot)
 	sl.mux.HandleFunc("GET /{short}", sl.serveShort)
 	sl.mux.HandleFunc("POST /{$}", sl.serveSet)
+	sl.mux.HandleFunc("QUERY /{$}", sl.serveSuggest)
 
 	return sl, nil
 }
@@ -117,8 +130,45 @@ DO UPDATE SET long = $2;
 		return
 	}
 
-	sendJSON(w, response{
+	sendJSON(w, setResponse{
 		Short: short,
+	})
+}
+
+func (sl *ShortLinks) serveSuggest(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		sendError(w, http.StatusBadRequest, "Parse form: %s", err)
+		return
+	}
+
+	log.Printf("%s %s %s", r.RemoteAddr, r.URL.Path, r.Form.Encode())
+
+	if !r.Form.Has("short") {
+		sendError(w, http.StatusBadRequest, "short= param required")
+		return
+	}
+
+	user := strings.Join(r.Form["short"], "\n")
+
+	comp, err := sl.oai.completeChat(
+		"You are an assistant helping a user choose useful short names for a URL shortener. The request contains a list recents names chosen by the user, separated by newlines, with the most recent names first. Respond with only a list of possible suggestions for additional short names, separated by newlines. Suggestions may include conceptual variations of the names provided, plural/singular variations, hyphenation variations, or other variations that are likely to be useful. Your bar for suggestions should be relatively high; responding with a short list of high quality suggestions is preferred.",
+		user,
+	)
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, "oai.completeChat: %s", err)
+		return
+	}
+
+	shorts := []string{}
+	for _, short := range strings.Split(comp, "\n") {
+		if short != "" {
+			shorts = append(shorts, strings.TrimSpace(short))
+		}
+	}
+
+	sendJSON(w, suggestResponse{
+		Shorts: shorts,
 	})
 }
 

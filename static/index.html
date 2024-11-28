@@ -76,7 +76,7 @@ function error(err1, err2) {
 	document.getElementById('err').show();
 }
 
-async function set() {
+async function setFromInputs() {
     const short = document.getElementById('short').value;
     const long = document.getElementById('long').value;
 
@@ -88,6 +88,10 @@ async function set() {
     document.getElementById('short-icon').setAttribute('name', 'check-square-fill');
     document.getElementById('long-icon').setAttribute('name', 'check-square-fill');
 
+    set(short, long);
+}
+
+function set(short, long) {
     if (short != '') {  
         setShortItem(short, 'check-square-fill');
     }
@@ -96,23 +100,42 @@ async function set() {
     params.set('short', short);
     params.set('long', long);
 
-    const resp = await fetch(`./?${params.toString()}`, {
+    fetch(`./?${params.toString()}`, {
         method: 'POST',
+    }).then(async (resp) => {
+        if (resp.status !== 200) {
+            error('Failed to set', (await resp.json()).message);
+            return;
+        }
+
+        const data = await resp.json();
+        const newShort = data.short;
+
+        setShortItem(newShort, 'check-square');
+
+        if (document.getElementById('short').value == short && document.getElementById('long').value == long) {
+            document.getElementById('short-icon').setAttribute('name', 'check-square');
+            document.getElementById('long-icon').setAttribute('name', 'check-square');
+            await navigator.clipboard.writeText(`${window.location.origin}/${newShort}`);
+        }
     });
 
-    if (resp.status !== 200) {
-        error('Failed to set', (await resp.json()).message);
-        return;
+    const suggestParams = new URLSearchParams();
+    for (const elem of document.getElementById('tree').children) {
+        const icon = elem.getElementsByTagName('sl-icon')[0];
+        if (icon.getAttribute('name') == 'check-square-fill' ||
+            icon.getAttribute('name') == 'check-square') {
+            suggestParams.append('short', elem.textContent);
+        }
     }
 
-    const newShort = (await resp.json()).short;
-
-    if (document.getElementById('short').value == short && document.getElementById('long').value == long) {
-        document.getElementById('short-icon').setAttribute('name', 'check-square');
-        document.getElementById('long-icon').setAttribute('name', 'check-square');
-        setShortItem(newShort, 'check-square');
-        await navigator.clipboard.writeText(`${window.location.origin}/${newShort}`);
-    }
+    fetch(`./?${suggestParams.toString()}`, {
+        method: 'QUERY',
+    }).then(async (resp) => {
+        for (const short of (await resp.json()).shorts) {
+            appendShortItem(short, long);
+        }
+    });
 }
 
 function setShortItem(short, icon) {
@@ -125,16 +148,32 @@ function setShortItem(short, icon) {
     }
 
     const item = document.createElement('sl-tree-item');
-    const url = `${window.location.origin}/${short}`;
     item.appendChild(document.createElement('sl-icon')).setAttribute('name', icon);
     item.appendChild(document.createTextNode(short));
-
-    const copy = document.createElement('sl-copy-button');
-    copy.setAttribute('value', url);
-    copy.style.color = 'var(--sl-color-neutral-300)';
-    item.appendChild(copy);
+    item.addEventListener('click', () => {
+        navigator.clipboard.writeText(`${window.location.origin}/${short}`);
+    });
 
     tree.insertBefore(item, tree.firstChild);
+}
+
+function appendShortItem(short, long) {
+    const tree = document.getElementById('tree');
+
+    for (const item of tree.children) {
+        if (item.textContent == short) {
+            return;
+        }
+    }
+
+    const item = document.createElement('sl-tree-item');
+    item.appendChild(document.createElement('sl-icon')).setAttribute('name', 'square');
+    item.appendChild(document.createTextNode(short));
+    item.addEventListener('click', () => {
+        set(short, long);
+    });
+
+    tree.appendChild(item);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -155,18 +194,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('short').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            set();
+            setFromInputs();
         }
     });
 
     document.getElementById('short').addEventListener('paste', () => {
         if (document.getElementById('long').value != '') {
-            setTimeout(() => set(), 0);
+            setTimeout(() => setFromInputs(), 0);
         }
     });
 
     document.getElementById('short-icon').addEventListener('click', () => {
-        set();
+        setFromInputs();
     });
 
 
@@ -177,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('long').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            set();
+            setFromInputs();
         } else {
             document.getElementById('tree').replaceChildren();
         }
@@ -185,17 +224,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('long').addEventListener('paste', () => {
         if (document.getElementById('short').value != '') {
-            setTimeout(() => set(), 0);
+            setTimeout(() => setFromInputs(), 0);
         }
     });
 
     document.getElementById('long-icon').addEventListener('click', () => {
-        set();
+        setFromInputs();
     });
 
 
     document.getElementById('set').addEventListener('click', () => {
-        set();
+        setFromInputs();
     });
 
 
