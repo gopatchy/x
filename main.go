@@ -119,14 +119,9 @@ func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = sl.db.Exec(`
-INSERT INTO links (short, long)
-VALUES ($1, $2)
-ON CONFLICT (short)
-DO UPDATE SET long = $2;
-	`, short, long)
+	_, err = sl.db.Exec(`SELECT update_link($1, $2);`, short, long)
 	if err != nil {
-		sendError(w, http.StatusInternalServerError, "upsert: %s", err)
+		sendError(w, http.StatusInternalServerError, "update_link: %s", err)
 		return
 	}
 
@@ -212,13 +207,53 @@ func main() {
 		log.Fatal(err)
 	}
 
-	_, err = db.Exec(`
-CREATE TABLE IF NOT EXISTS links (
-    short VARCHAR(100) PRIMARY KEY,
-    long TEXT NOT NULL
-);`)
-	if err != nil {
-		log.Fatalf("Failed to create table: %v", err)
+	stmts := []string{
+		`
+    CREATE TABLE IF NOT EXISTS links (
+        short VARCHAR(100) PRIMARY KEY,
+        long TEXT NOT NULL
+    );
+	`,
+
+		`
+	CREATE TABLE IF NOT EXISTS links_history (
+		short VARCHAR(100),
+		long TEXT NOT NULL,
+		until TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+	);
+	`,
+
+		`
+	CREATE OR REPLACE FUNCTION update_link(
+		_short VARCHAR(100),
+		_long TEXT
+	) RETURNS void AS $$
+	DECLARE
+		old RECORD;
+	BEGIN
+		SELECT * INTO old FROM links WHERE short = _short;
+
+		IF old IS NOT NULL THEN
+			INSERT INTO links_history (short, long)
+			VALUES (old.short, old.long);
+
+			UPDATE links
+			SET long = _long
+			WHERE short = _short;
+		ELSE
+			INSERT INTO links (short, long)
+			VALUES (_short, _long);
+		END IF;
+	END;
+	$$ LANGUAGE plpgsql;
+	`,
+	}
+
+	for _, stmt := range stmts {
+		_, err := db.Exec(stmt)
+		if err != nil {
+			log.Fatalf("Failed to create tables & functions: %v", err)
+		}
 	}
 
 	sl, err := NewShortLinks(db)
