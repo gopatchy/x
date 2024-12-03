@@ -76,6 +76,11 @@ func (sl *ShortLinks) serveRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sl *ShortLinks) serveRootWithPath(w http.ResponseWriter, r *http.Request, path string) {
+	err := r.ParseForm()
+	if err != nil {
+		sendError(w, http.StatusBadRequest, "Parse form: %s", err)
+		return
+	}
 	log.Printf("%s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL)
 
 	if !sl.isWritable(r.Host) {
@@ -83,9 +88,10 @@ func (sl *ShortLinks) serveRootWithPath(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	err := sl.tmpl.Execute(w, map[string]any{
+	err = sl.tmpl.Execute(w, map[string]any{
 		"path": path,
 		"host": sl.getDomain(r.Host),
+		"long": r.Form.Get("long"),
 	})
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "error executing template: %s", err)
