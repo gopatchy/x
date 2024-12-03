@@ -222,8 +222,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         customElements.whenDefined('sl-tree'),
     ]);
 
-    document.getElementById('short').setAttribute('label', `${window.location.host}/`);
-
     let shortPaste = false;
 
     document.getElementById('short').addEventListener('sl-input', async () => {
@@ -295,7 +293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	</head>
 	<body>
         <div id="container" style="width: min(500px, calc(100vw - 10px))">
-            <sl-input id="short" value="{{ .path }}">
+            <sl-input id="short" value="{{ .path }}" label="{{ .host }}/">
                 <sl-icon id="short-icon" name="type" slot="suffix"></sl-icon>
             </sl-input>
 
