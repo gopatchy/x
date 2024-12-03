@@ -255,6 +255,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('long').addEventListener('sl-input', async () => {
         clearAlerts();
         setInputIcons();
+        document.getElementById('tree').replaceChildren();
 
         if (longPaste) {
             longPaste = false;
@@ -265,8 +266,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('long').addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
             await setFromInputs();
-        } else {
-            document.getElementById('tree').replaceChildren();
         }
     });
 
