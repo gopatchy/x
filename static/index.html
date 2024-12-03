@@ -151,7 +151,7 @@ async function set(short, long) {
     // Only set the clipboard if the user didn't change the inputs
     if (document.getElementById('short').value == oldShort && document.getElementById('long').value == oldLong) {
         try {
-            await navigator.clipboard.writeText(`${window.location.origin}/${newShort}`);
+            await navigator.clipboard.writeText(`{{ .host }}/${newShort}`);
         } catch (err) {
             console.log(err);
         }
@@ -188,7 +188,7 @@ function setShortItem(short, icon) {
     item.appendChild(document.createElement('sl-icon')).setAttribute('name', icon);
     item.appendChild(document.createTextNode(short));
     item.addEventListener('click', () => {
-        navigator.clipboard.writeText(`${window.location.origin}/${short}`);
+        navigator.clipboard.writeText(`{{ .host }}/${short}`);
     });
 
     tree.insertBefore(item, tree.firstChild);
