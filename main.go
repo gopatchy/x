@@ -72,6 +72,11 @@ func (sl *ShortLinks) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (sl *ShortLinks) serveRoot(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL)
 
+	if sl.isWritable(r.Host) {
+		sl.serveRootWithPath(w, r, "")
+		return
+	}
+
 	parts := strings.SplitN(r.Host, ".", 2)
 	if len(parts) != 2 {
 		sl.serveRootWithPath(w, r, "")
