@@ -17,6 +17,7 @@ import (
 
 type ShortLinks struct {
 	tmpl *template.Template
+	help *template.Template
 	mux  *http.ServeMux
 	db   *sql.DB
 	r    *rand.Rand
@@ -44,6 +45,11 @@ func NewShortLinks(db *sql.DB, domainAliases map[string]string, writableDomains 
 		return nil, fmt.Errorf("static/index.html: %w", err)
 	}
 
+	help, err := template.New("help.html").ParseFiles("static/help.html")
+	if err != nil {
+		return nil, fmt.Errorf("static/help.html: %w", err)
+	}
+
 	oai, err := newOAIClientFromEnv()
 	if err != nil {
 		return nil, fmt.Errorf("newOAIClientFromEnv: %w", err)
@@ -51,6 +57,7 @@ func NewShortLinks(db *sql.DB, domainAliases map[string]string, writableDomains 
 
 	sl := &ShortLinks{
 		tmpl: tmpl,
+		help: help,
 		mux:  http.NewServeMux(),
 		db:   db,
 		r:    rand.New(rand.NewSource(uint64(time.Now().UnixNano()))),
@@ -126,6 +133,11 @@ func (sl *ShortLinks) serveShort(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL, r.Form)
 
 	short := r.PathValue("short")
+
+	if sl.isWritable(r.Host) && short == "_help" {
+		sl.serveHelp(w, r)
+		return
+	}
 
 	long, err := sl.getLong(short, sl.getDomain(r.Host))
 	if err != nil {
@@ -218,6 +230,21 @@ func (sl *ShortLinks) serveSuggest(w http.ResponseWriter, r *http.Request) {
 		Shorts: shorts,
 		Domain: sl.getDomain(r.Host),
 	})
+}
+
+func (sl *ShortLinks) serveHelp(w http.ResponseWriter, r *http.Request) {
+	if !sl.isWritable(r.Host) {
+		sendError(w, http.StatusNotFound, "not found")
+		return
+	}
+
+	err := sl.help.Execute(w, map[string]any{
+		"host": r.Host,
+	})
+	if err != nil {
+		sendError(w, http.StatusInternalServerError, "error executing template: %s", err)
+		return
+	}
 }
 
 func (sl *ShortLinks) genShort(domain string) (string, error) {

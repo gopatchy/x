@@ -1,0 +1,279 @@
+<!doctype html>
+<html>
+	<head>
+		<style>
+:not(:defined) {
+  visibility: hidden;
+}
+
+body {
+	font: 12px var(--sl-font-mono);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+sl-card {
+    width: min(500px, calc(100vw - 10px));
+    margin-bottom: 10px;
+    --padding: 10px;
+}
+
+br + sl-tag[pill] {
+    margin-top: 5px;
+}
+
+sl-tag::part(base) {
+    user-select: text;
+}
+        </style>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iTGF5ZXJfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAxMjAwIDEyMDAiPgogIDwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAyOS4xLjAsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiAyLjEuMCBCdWlsZCAxNDIpICAtLT4KICA8ZGVmcz4KICAgIDxzdHlsZT4KICAgICAgLnN0MCB7CiAgICAgICAgZmlsbDogI2Y4OTUxZDsKICAgICAgfQoKICAgICAgLnN0MCwgLnN0MSB7CiAgICAgICAgZmlsbC1ydWxlOiBldmVub2RkOwogICAgICB9CgogICAgICAuc3QxIHsKICAgICAgICBmaWxsOiAjYTQ0OTliOwogICAgICB9CiAgICA8L3N0eWxlPgogIDwvZGVmcz4KICA8cGF0aCBjbGFzcz0ic3QwIiBkPSJNNDcyLjgsOTc5LjlsNDQuNC0uNy00LjctMjg4LjgtMjg4LjksNC43LjcsNDQuNCwyMTMtMy41LTMzNC4zLDM0NS4zYy04LjUsOC44LTguMywyMi45LjUsMzEuNCw0LjQsNC4zLDEwLjEsNi40LDE1LjgsNi4zLDUuNywwLDExLjMtMi40LDE1LjYtNi44bDMzNC4zLTM0NS4zLDMuNSwyMTMiLz4KICA8cGF0aCBjbGFzcz0ic3QwIiBkPSJNNzI3LjIsMjIwLjFsLTQ0LjQuNyw0LjcsMjg4LjksMjg4LjgtNC43LS43LTQ0LjQtMjEzLDMuNSwzMzQuMy0zNDUuM2M4LjUtOC44LDguMy0yMi45LS41LTMxLjQtOC44LTguNS0yMi45LTguMy0zMS40LjVsLTMzNC4zLDM0NS4zLTMuNS0yMTMiLz4KICA8cGF0aCBjbGFzcz0ic3QxIiBkPSJNMTA2Mi4zLDIxOC4ybC0xOTMuMiwxOTkuNiwxNTMuMy0yLjUsMi4yLDEzMy4zLTM4MC45LDYuMi02LjItMzgwLjksMTMzLjMtMi4yLDIuNSwxNTMuMywxOTMuMi0xOTkuNkM4NjIuNSw0NSw3MzEuNi0yLjIsNTkwLjIsMCwyNTkuNCw1LjUtNS4zLDI3OSwwLDYwOS44YzIuMywxNDEuNSw1My43LDI3MC43LDEzNy42LDM3MmwxOTMuMi0xOTkuNi0xNTMuMywyLjUtMi4yLTEzMy4zLDM4MC45LTYuMiw2LjIsMzgwLjktMTMzLjMsMi4yLTIuNS0xNTMuMy0xOTMuMiwxOTkuNmMxMDQsODAuNSwyMzQuOSwxMjcuNywzNzYuMywxMjUuNCwzMzAuOC01LjQsNTk1LjYtMjc4LjksNTkwLjItNjA5LjctMi4zLTE0MS40LTUzLjctMjcwLjctMTM3LjYtMzcyIi8+Cjwvc3ZnPg==">
+        <link
+                rel="stylesheet"
+                media="(prefers-color-scheme:light)"
+                href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/themes/light.css"
+                />
+        <link
+                rel="stylesheet"
+                media="(prefers-color-scheme:dark)"
+                href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/themes/dark.css"
+                onload="document.documentElement.classList.add('sl-theme-dark');"
+                />
+        <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/shoelace-autoloader.js"></script>
+        <script>
+        </script>
+    </head>
+    <body>
+        <div style="width: min(500px, calc(100vw - 10px))">
+			<sl-tab-group>
+				<sl-tab slot="nav" panel="share">Share</sl-tab>
+				<sl-tab slot="nav" panel="copy">Copy</sl-tab>
+                <sl-tab slot="nav" panel="custom">Custom</sl-tab>
+
+				<sl-tab-panel name="share">
+                    <sl-card class="card-basic">
+                        Receive
+                        <sl-tag size="small" pill variant="primary">URLs</sl-tag>
+                        input from
+                        <sl-tag size="small" pill variant="primary">Share Sheet</sl-tag>
+                        <br />
+                        <br />
+                        If there's no input:
+                        <br />
+                        <sl-tag size="small" pill variant="primary">Get Clipboard</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Get contents of
+                        <sl-tag size="small" pill variant="primary">https://{{ .host }}/</sl-tag>
+
+                        <sl-divider></sl-divider>
+
+                        Method:
+                        <sl-tag size="small" pill variant="primary">POST</sl-tag>
+                        <br />
+
+                        Request Body:
+                        <sl-tag size="small" pill variant="primary">Form</sl-tag>
+                        <br />
+
+                        Key:
+                        <sl-tag size="small" pill variant="primary">long</sl-tag>
+                        <br />
+
+                        Type:
+                        <sl-tag size="small" pill variant="primary">Text</sl-tag>
+                        <br />
+
+                        Value:
+                        <sl-tag size="small" pill variant="primary">Shortcut Input</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Get
+                        <sl-tag size="small" pill variant="primary">Value</sl-tag>
+                        for
+                        <sl-tag size="small" pill variant="primary">short</sl-tag>
+                        in
+                        <sl-tag size="small" pill variant="primary">Contents of URL</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Set variable
+                        <sl-tag size="small" pill variant="primary">short</sl-tag>
+                        to
+                        <sl-tag size="small" pill variant="primary">Dictionary Value</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Get
+                        <sl-tag size="small" pill variant="primary">Value</sl-tag>
+                        for
+                        <sl-tag size="small" pill variant="primary">domain</sl-tag>
+                        in
+                        <sl-tag size="small" pill variant="primary">Contents of URL</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Set variable
+                        <sl-tag size="small" pill variant="primary">domain</sl-tag>
+                        to
+                        <sl-tag size="small" pill variant="primary">Dictionary Value</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Combine
+                        <sl-tag size="small" pill variant="primary">https://</sl-tag>
+                        <sl-tag size="small" pill variant="primary">domain</sl-tag>
+                        <sl-tag size="small" pill variant="primary">/</sl-tag>
+                        <sl-tag size="small" pill variant="primary">short</sl-tag>
+                        <sl-tag size="small" pill variant="neutral">+</sl-tag>
+                        with
+                        <sl-tag size="small" pill variant="primary">Custom</sl-tag>
+                        <sl-tag size="small" pill variant="neutral">Text</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Share
+                        <sl-tag size="small" pill variant="primary">Combined Text</sl-tag>
+                        <sl-divider></sl-divider>
+                        Type:
+                        <sl-tag size="small" pill variant="primary">URL</sl-tag>
+                    </sl-card>
+				</sl-tab-panel>
+
+				<sl-tab-panel name="copy">
+                    <sl-card class="card-basic">
+                        Receive
+                        <sl-tag size="small" pill variant="primary">URLs</sl-tag>
+                        input from
+                        <sl-tag size="small" pill variant="primary">Share Sheet</sl-tag>
+                        <br />
+                        <br />
+                        If there's no input:
+                        <br />
+                        <sl-tag size="small" pill variant="primary">Get Clipboard</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Get contents of
+                        <sl-tag size="small" pill variant="primary">https://{{ .host }}/</sl-tag>
+
+                        <sl-divider></sl-divider>
+
+                        Method:
+                        <sl-tag size="small" pill variant="primary">POST</sl-tag>
+                        <br />
+
+                        Request Body:
+                        <sl-tag size="small" pill variant="primary">Form</sl-tag>
+                        <br />
+
+                        Key:
+                        <sl-tag size="small" pill variant="primary">long</sl-tag>
+                        <br />
+
+                        Type:
+                        <sl-tag size="small" pill variant="primary">Text</sl-tag>
+                        <br />
+
+                        Value:
+                        <sl-tag size="small" pill variant="primary">Shortcut Input</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Get
+                        <sl-tag size="small" pill variant="primary">Value</sl-tag>
+                        for
+                        <sl-tag size="small" pill variant="primary">short</sl-tag>
+                        in
+                        <sl-tag size="small" pill variant="primary">Contents of URL</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Set variable
+                        <sl-tag size="small" pill variant="primary">short</sl-tag>
+                        to
+                        <sl-tag size="small" pill variant="primary">Dictionary Value</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Get
+                        <sl-tag size="small" pill variant="primary">Value</sl-tag>
+                        for
+                        <sl-tag size="small" pill variant="primary">domain</sl-tag>
+                        in
+                        <sl-tag size="small" pill variant="primary">Contents of URL</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Set variable
+                        <sl-tag size="small" pill variant="primary">domain</sl-tag>
+                        to
+                        <sl-tag size="small" pill variant="primary">Dictionary Value</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Combine
+                        <sl-tag size="small" pill variant="primary">https://</sl-tag>
+                        <sl-tag size="small" pill variant="primary">domain</sl-tag>
+                        <sl-tag size="small" pill variant="primary">/</sl-tag>
+                        <sl-tag size="small" pill variant="primary">short</sl-tag>
+                        <sl-tag size="small" pill variant="neutral">+</sl-tag>
+                        with
+                        <sl-tag size="small" pill variant="primary">Custom</sl-tag>
+                        <sl-tag size="small" pill variant="neutral">Text</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Copy
+                        <sl-tag size="small" pill variant="primary">Combined Text</sl-tag>
+                        to clipboard
+                        <sl-divider></sl-divider>
+                        Type:
+                        <sl-tag size="small" pill variant="primary">URL</sl-tag>
+                    </sl-card>
+				</sl-tab-panel>
+
+				<sl-tab-panel name="custom">
+                    <sl-card class="card-basic">
+                        Receive
+                        <sl-tag size="small" pill variant="primary">URLs</sl-tag>
+                        input from
+                        <sl-tag size="small" pill variant="primary">Share Sheet</sl-tag>
+                        <br />
+                        <br />
+                        If there's no input:
+                        <br />
+                        <sl-tag size="small" pill variant="primary">Get Clipboard</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        URL
+                        <sl-tag size="small" pill variant="primary">Encode</sl-tag>
+                        <sl-tag size="small" pill variant="primary">Shortcut Input</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Combine
+                        <sl-tag size="small" pill variant="primary">https://{{ .host }}/?long=</sl-tag>
+                        <sl-tag size="small" pill variant="primary">URL Encoded Text</sl-tag>
+                        <sl-tag size="small" pill variant="neutral">+</sl-tag>
+                        with
+                        <sl-tag size="small" pill variant="primary">Custom</sl-tag>
+                        <sl-tag size="small" pill variant="neutral">Text</sl-tag>
+                    </sl-card>
+
+                    <sl-card class="card-basic">
+                        Open
+                        <sl-tag size="small" pill variant="primary">Combined Text</sl-tag>
+                        <sl-divider></sl-divider>
+                        Type:
+                        <sl-tag size="small" pill variant="primary">URL</sl-tag>
+                    </sl-card>
+				</sl-tab-panel>
+			</sl-tab-group>
+        </div>
+    </body>
+</html>
