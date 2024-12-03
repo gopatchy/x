@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -26,11 +27,13 @@ type ShortLinks struct {
 }
 
 type setResponse struct {
-	Short string `json:"short"`
+	Short  string `json:"short"`
+	Domain string `json:"domain"`
 }
 
 type suggestResponse struct {
 	Shorts []string `json:"shorts"`
+	Domain string   `json:"domain"`
 }
 
 func NewShortLinks(db *sql.DB, domainAliases map[string]string, writableDomains map[string]bool) (*ShortLinks, error) {
@@ -70,7 +73,11 @@ func (sl *ShortLinks) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sl *ShortLinks) serveRoot(w http.ResponseWriter, r *http.Request) {
-	log.Printf("%s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL)
+	err := sl.parseForm(r)
+	if err != nil {
+		sendError(w, http.StatusBadRequest, "parse form: %s", err)
+		return
+	}
 
 	if sl.isWritable(r.Host) {
 		sl.serveRootWithPath(w, r, "")
@@ -93,13 +100,11 @@ func (sl *ShortLinks) serveRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sl *ShortLinks) serveRootWithPath(w http.ResponseWriter, r *http.Request, path string) {
-	err := r.ParseForm()
+	err := sl.parseForm(r)
 	if err != nil {
-		sendError(w, http.StatusBadRequest, "Parse form: %s", err)
+		sendError(w, http.StatusBadRequest, "parse form: %s", err)
 		return
 	}
-
-	log.Printf("%s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL)
 
 	if !sl.isWritable(r.Host) {
 		sendError(w, http.StatusNotFound, "not found")
@@ -118,7 +123,7 @@ func (sl *ShortLinks) serveRootWithPath(w http.ResponseWriter, r *http.Request, 
 }
 
 func (sl *ShortLinks) serveShort(w http.ResponseWriter, r *http.Request) {
-	log.Printf("%s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL)
+	log.Printf("%s %s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL, r.Form)
 
 	short := r.PathValue("short")
 
@@ -132,13 +137,11 @@ func (sl *ShortLinks) serveShort(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+	err := sl.parseForm(r)
 	if err != nil {
-		sendError(w, http.StatusBadRequest, "Parse form: %s", err)
+		sendError(w, http.StatusBadRequest, "parse form: %s", err)
 		return
 	}
-
-	log.Printf("%s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL)
 
 	if !sl.isWritable(r.Host) {
 		sendError(w, http.StatusNotFound, "not found")
@@ -171,30 +174,29 @@ func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sendJSON(w, setResponse{
-		Short: short,
+		Short:  short,
+		Domain: sl.getDomain(r.Host),
 	})
 }
 
 func (sl *ShortLinks) serveSuggest(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+	err := sl.parseForm(r)
 	if err != nil {
-		sendError(w, http.StatusBadRequest, "Parse form: %s", err)
+		sendError(w, http.StatusBadRequest, "parse form: %s", err)
 		return
 	}
-
-	log.Printf("%s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL)
 
 	if !sl.isWritable(r.Host) {
 		sendError(w, http.StatusNotFound, "not found")
 		return
 	}
 
-	if !r.Form.Has("short") {
-		sendError(w, http.StatusBadRequest, "short= param required")
+	if !r.Form.Has("shorts") {
+		sendError(w, http.StatusBadRequest, "shorts= param required")
 		return
 	}
 
-	user := strings.Join(r.Form["short"], "\n")
+	user := strings.Join(r.Form["shorts"], "\n")
 
 	comp, err := sl.oai.completeChat(
 		"You are an assistant helping a user choose useful short names for a URL shortener. The request contains a list recents names chosen by the user, separated by newlines, with the most recent names first. Respond with only a list of possible suggestions for additional short names, separated by newlines. In descending order of preference, suggestions should include: plural/singular variations, 2 and 3 letter abbreivations, conceptual variations, other variations that are likely to be useful. Your bar for suggestions should be relatively high; responding with a shorter list of high quality suggestions is preferred.",
@@ -214,6 +216,7 @@ func (sl *ShortLinks) serveSuggest(w http.ResponseWriter, r *http.Request) {
 
 	sendJSON(w, suggestResponse{
 		Shorts: shorts,
+		Domain: sl.getDomain(r.Host),
 	})
 }
 
@@ -261,6 +264,45 @@ func (sl *ShortLinks) getLong(short, domain string) (string, error) {
 	}
 
 	return long, nil
+}
+
+func (sl *ShortLinks) parseForm(r *http.Request) error {
+	defer r.Body.Close()
+
+	err := r.ParseForm()
+	if err != nil {
+		return err
+	}
+
+	if r.Header.Get("Content-Type") == "application/json" {
+		dec := json.NewDecoder(r.Body)
+		js := map[string]any{}
+		err := dec.Decode(&js)
+		if err != nil {
+			return err
+		}
+
+		for k, v := range js {
+			switch v := v.(type) {
+			case []any:
+				for _, s := range v {
+					r.Form.Add(k, fmt.Sprintf("%v", s))
+				}
+
+			default:
+				log.Printf("unknown type: %T", v)
+				r.Form.Set(k, fmt.Sprintf("%v", v))
+			}
+		}
+	}
+
+	sl.logRequest(r)
+
+	return nil
+}
+
+func (sl *ShortLinks) logRequest(r *http.Request) {
+	log.Printf("%s %s %s %s %s %#v", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL, r.Form)
 }
 
 func main() {

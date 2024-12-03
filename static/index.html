@@ -110,12 +110,8 @@ async function setFromInputs() {
 
 async function set(short, long) {
     if (short != '') {  
-        setShortItem(short, 'check-square-fill');
+        setShortItem(short, null, 'check-square-fill');
     }
-
-    const params = new URLSearchParams();
-    params.set('short', short);
-    params.set('long', long);
 
     const oldShort = document.getElementById('short').value;
     const oldLong = document.getElementById('long').value;
@@ -123,8 +119,15 @@ async function set(short, long) {
     let resp;
 
     try {
-        resp = await fetch(`./?${params.toString()}`, {
+        resp = await fetch('./', {
             method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                short: short,
+                long: long,
+            }),
         });
     } catch (err) {
         console.log(err);
@@ -139,8 +142,9 @@ async function set(short, long) {
 
     const data = await resp.json();
     const newShort = data.short;
+    const newDomain = data.domain;
 
-    setShortItem(newShort, 'check-square');
+    setShortItem(newShort, newDomain, 'check-square');
 
     // Only set the icons if we were actually setting from these inputs
     if (document.getElementById('short').value == short && document.getElementById('long').value == long) {
@@ -151,31 +155,42 @@ async function set(short, long) {
     // Only set the clipboard if the user didn't change the inputs
     if (document.getElementById('short').value == oldShort && document.getElementById('long').value == oldLong) {
         try {
-            await navigator.clipboard.writeText(`${window.location.protocol}//{{ .host }}/${newShort}`);
+            await navigator.clipboard.writeText(`${window.location.protocol}//${newDomain}/${newShort}`);
         } catch (err) {
             console.log(err);
         }
     }
 
-    const suggestParams = new URLSearchParams();
+    const shorts = [];
     for (const elem of document.getElementById('tree').children) {
         const icon = elem.getElementsByTagName('sl-icon')[0];
         if (icon.getAttribute('name') == 'check-square-fill' ||
             icon.getAttribute('name') == 'check-square') {
-            suggestParams.append('short', elem.textContent);
+            shorts.push(elem.textContent);
         }
     }
 
-    fetch(`./?${suggestParams.toString()}`, {
-        method: 'QUERY',
-    }).then(async (resp) => {
-        for (const short of (await resp.json()).shorts) {
-            appendShortItem(short, long);
-        }
-    }).catch((err) => {});
+    try {
+        resp = await fetch('./', {
+            method: 'QUERY',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                shorts: shorts,
+            }),
+        });
+    } catch (err) {
+        console.log(err);
+        return;
+    }
+
+    for (const short of (await resp.json()).shorts) {
+        appendShortItem(short, long);
+    }
 }
 
-function setShortItem(short, icon) {
+function setShortItem(short, domain, icon) {
     const tree = document.getElementById('tree');
 
     for (const item of tree.children) {
@@ -187,9 +202,12 @@ function setShortItem(short, icon) {
     const item = document.createElement('sl-tree-item');
     item.appendChild(document.createElement('sl-icon')).setAttribute('name', icon);
     item.appendChild(document.createTextNode(short));
-    item.addEventListener('click', () => {
-        navigator.clipboard.writeText(`${window.location.protocol}//{{ .host }}/${short}`);
-    });
+
+    if (domain != null) {
+        item.addEventListener('click', () => {
+            navigator.clipboard.writeText(`${window.location.protocol}//${domain}/${short}`);
+        });
+    }
 
     tree.insertBefore(item, tree.firstChild);
 }
