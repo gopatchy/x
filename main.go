@@ -97,7 +97,7 @@ func (sl *ShortLinks) serveRootWithPath(w http.ResponseWriter, r *http.Request, 
 	log.Printf("%s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL)
 
 	if !sl.isWritable(r.Host) {
-		sendError(w, http.StatusForbidden, "not writable")
+		sendError(w, http.StatusNotFound, "not found")
 		return
 	}
 
@@ -136,7 +136,7 @@ func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL)
 
 	if !sl.isWritable(r.Host) {
-		sendError(w, http.StatusForbidden, "not writable")
+		sendError(w, http.StatusNotFound, "not found")
 		return
 	}
 
@@ -180,7 +180,7 @@ func (sl *ShortLinks) serveSuggest(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL)
 
 	if !sl.isWritable(r.Host) {
-		sendError(w, http.StatusForbidden, "not writable")
+		sendError(w, http.StatusNotFound, "not found")
 		return
 	}
 
