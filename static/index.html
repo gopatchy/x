@@ -105,10 +105,10 @@ async function setFromInputs() {
     document.getElementById('short-icon').setAttribute('name', 'check-square-fill');
     document.getElementById('long-icon').setAttribute('name', 'check-square-fill');
 
-    set(short, long);
+    await set(short, long);
 }
 
-function set(short, long) {
+async function set(short, long) {
     if (short != '') {  
         setShortItem(short, 'check-square-fill');
     }
@@ -120,34 +120,42 @@ function set(short, long) {
     const oldShort = document.getElementById('short').value;
     const oldLong = document.getElementById('long').value;
 
-    fetch(`./?${params.toString()}`, {
-        method: 'POST',
-    }).then(async (resp) => {
-        if (resp.status !== 200) {
-            error('Failed to set', (await resp.json()).message);
-            return;
-        }
+    let resp;
 
-        const data = await resp.json();
-        const newShort = data.short;
+    try {
+        resp = await fetch(`./?${params.toString()}`, {
+            method: 'POST',
+        });
+    } catch (err) {
+        console.log(err);
+        setTimeout(async () => await set(short, long), 5000);
+        return;
+    }
 
-        setShortItem(newShort, 'check-square');
+    if (resp.status !== 200) {
+        error('Failed to set', (await resp.json()).message);
+        return;
+    }
 
-        // Only set the icons if we were actually setting from these inputs
-        if (document.getElementById('short').value == short && document.getElementById('long').value == long) {
-            document.getElementById('short-icon').setAttribute('name', 'check-square');
-            document.getElementById('long-icon').setAttribute('name', 'check-square');
-        }
+    const data = await resp.json();
+    const newShort = data.short;
 
-        // Only set the clipboard if the user didn't change the inputs
-        if (document.getElementById('short').value == oldShort && document.getElementById('long').value == oldLong) {
+    setShortItem(newShort, 'check-square');
+
+    // Only set the icons if we were actually setting from these inputs
+    if (document.getElementById('short').value == short && document.getElementById('long').value == long) {
+        document.getElementById('short-icon').setAttribute('name', 'check-square');
+        document.getElementById('long-icon').setAttribute('name', 'check-square');
+    }
+
+    // Only set the clipboard if the user didn't change the inputs
+    if (document.getElementById('short').value == oldShort && document.getElementById('long').value == oldLong) {
+        try {
             await navigator.clipboard.writeText(`${window.location.origin}/${newShort}`);
+        } catch (err) {
+            console.log(err);
         }
-    }).catch((err) => {
-        setTimeout(() => {
-            set(short, long);
-        }, 5000);
-    });
+    }
 
     const suggestParams = new URLSearchParams();
     for (const elem of document.getElementById('tree').children) {
@@ -221,20 +229,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         setInputIcons();
     });
 
-    document.getElementById('short').addEventListener('keydown', (e) => {
+    document.getElementById('short').addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
-            setFromInputs();
+            await setFromInputs();
         }
     });
 
-    document.getElementById('short').addEventListener('paste', () => {
+    document.getElementById('short').addEventListener('paste', async () => {
         if (document.getElementById('long').value != '') {
-            setTimeout(() => setFromInputs(), 0);
+            setTimeout(async () => await setFromInputs(), 0);
         }
     });
 
-    document.getElementById('short-icon').addEventListener('click', () => {
-        setFromInputs();
+    document.getElementById('short-icon').addEventListener('click', async () => {
+        await setFromInputs();
     });
 
 
@@ -243,9 +251,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         setInputIcons();
     });
 
-    document.getElementById('long').addEventListener('keydown', (e) => {
+    document.getElementById('long').addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
-            setFromInputs();
+            await setFromInputs();
         } else {
             document.getElementById('tree').replaceChildren();
         }
@@ -253,17 +261,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('long').addEventListener('paste', () => {
         if (document.getElementById('short').value != '') {
-            setTimeout(() => setFromInputs(), 0);
+            setTimeout(async () => await setFromInputs(), 0);
         }
     });
 
-    document.getElementById('long-icon').addEventListener('click', () => {
-        setFromInputs();
+    document.getElementById('long-icon').addEventListener('click', async () => {
+        await setFromInputs();
     });
 
 
-    document.getElementById('set').addEventListener('click', () => {
-        setFromInputs();
+    document.getElementById('set').addEventListener('click', async () => {
+        await setFromInputs();
     });
 
 
