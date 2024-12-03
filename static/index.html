@@ -93,10 +93,7 @@ function error(err1, err2) {
 	document.getElementById('err').show();
 }
 
-async function setFromInputs(copy = null) {
-    if (copy == null) {
-        copy = async (v) => await navigator.clipboard.writeText(v);
-    }
+async function setFromInputs() {
     const short = document.getElementById('short').value;
     const long = document.getElementById('long').value;
 
@@ -108,10 +105,10 @@ async function setFromInputs(copy = null) {
     document.getElementById('short-icon').setAttribute('name', 'check-square-fill');
     document.getElementById('long-icon').setAttribute('name', 'check-square-fill');
 
-    await set(short, long, copy);
+    await set(short, long);
 }
 
-async function set(short, long, copy) {
+async function set(short, long) {
     if (short != '') {  
         setShortItem(short, 'check-square-fill');
     }
@@ -131,7 +128,7 @@ async function set(short, long, copy) {
         });
     } catch (err) {
         console.log(err);
-        setTimeout(async () => await set(short, long, copy), 5000);
+        setTimeout(async () => await set(short, long), 5000);
         return;
     }
 
@@ -154,7 +151,7 @@ async function set(short, long, copy) {
     // Only set the clipboard if the user didn't change the inputs
     if (document.getElementById('short').value == oldShort && document.getElementById('long').value == oldLong) {
         try {
-            await copy(`${window.location.origin}/${newShort}`);
+            await navigator.clipboard.writeText(`${window.location.origin}/${newShort}`);
         } catch (err) {
             console.log(err);
         }
@@ -240,8 +237,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('short').addEventListener('paste', async () => {
         if (document.getElementById('long').value != '') {
-            const copy = async (v) => await navigator.clipboard.writeText(v);
-            setTimeout(async () => await setFromInputs(copy), 0);
+            setTimeout(async () => await setFromInputs(), 0);
         }
     });
 
@@ -265,8 +261,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('long').addEventListener('paste', () => {
         if (document.getElementById('short').value != '') {
-            const copy = async (v) => await navigator.clipboard.writeText(v);
-            setTimeout(async () => await setFromInputs(copy), 0);
+            setTimeout(async () => await setFromInputs(), 0);
         }
     });
 
