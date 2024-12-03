@@ -64,7 +64,7 @@ func (sl *ShortLinks) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sl *ShortLinks) serveRoot(w http.ResponseWriter, r *http.Request) {
-	log.Printf("%s %s", r.RemoteAddr, r.URL.Path)
+	log.Printf("%s %s %s %s", r.RemoteAddr, r.Method, r.Host, r.URL)
 	sl.serveRootWithPath(w, r, "")
 }
 
@@ -79,11 +79,11 @@ func (sl *ShortLinks) serveRootWithPath(w http.ResponseWriter, r *http.Request, 
 }
 
 func (sl *ShortLinks) serveShort(w http.ResponseWriter, r *http.Request) {
-	log.Printf("%s %s", r.RemoteAddr, r.URL.Path)
+	log.Printf("%s %s %s %s", r.RemoteAddr, r.Method, r.Host, r.URL)
 
 	short := r.PathValue("short")
 
-	row := sl.db.QueryRow(`SELECT long FROM links WHERE short = $1`, short)
+	row := sl.db.QueryRow(`SELECT long FROM links WHERE short = $1 AND domain = $2`, short, r.Host)
 	var long string
 	err := row.Scan(&long)
 	if err != nil {
@@ -101,16 +101,19 @@ func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("%s %s %s", r.RemoteAddr, r.URL.Path, r.Form.Encode())
+	log.Printf("%s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, r.URL, r.Form.Encode())
 
 	short := r.Form.Get("short")
+	generated := false
 
 	if short == "" {
-		short, err = sl.genShort()
+		short, err = sl.genShort(r.Host)
 		if err != nil {
 			sendError(w, http.StatusInternalServerError, "genShort: %s", err)
 			return
 		}
+
+		generated = true
 	}
 
 	long := r.Form.Get("long")
@@ -119,7 +122,7 @@ func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = sl.db.Exec(`SELECT update_link($1, $2);`, short, long)
+	_, err = sl.db.Exec(`SELECT update_link($1, $2, $3, $4);`, short, long, r.Host, generated)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "update_link: %s", err)
 		return
@@ -137,7 +140,7 @@ func (sl *ShortLinks) serveSuggest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("%s %s %s", r.RemoteAddr, r.URL.Path, r.Form.Encode())
+	log.Printf("%s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, r.URL, r.Form.Encode())
 
 	if !r.Form.Has("short") {
 		sendError(w, http.StatusBadRequest, "short= param required")
@@ -167,7 +170,7 @@ func (sl *ShortLinks) serveSuggest(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (sl *ShortLinks) genShort() (string, error) {
+func (sl *ShortLinks) genShort(domain string) (string, error) {
 	for chars := 3; chars <= 10; chars++ {
 		b := make([]byte, chars)
 
@@ -178,7 +181,7 @@ func (sl *ShortLinks) genShort() (string, error) {
 		short := string(b)
 
 		exists := false
-		err := sl.db.QueryRow("SELECT EXISTS(SELECT 1 FROM links WHERE short = $1)", short).Scan(&exists)
+		err := sl.db.QueryRow("SELECT EXISTS(SELECT 1 FROM links WHERE short = $1 AND domain = $2)", short, domain).Scan(&exists)
 		if err != nil {
 			return "", fmt.Errorf("check exists: %w", err)
 		}
@@ -210,8 +213,11 @@ func main() {
 	stmts := []string{
 		`
     CREATE TABLE IF NOT EXISTS links (
-        short VARCHAR(100) PRIMARY KEY,
-        long TEXT NOT NULL
+        short VARCHAR(100) NOT NULL,
+        long TEXT NOT NULL,
+		domain VARCHAR(255) NOT NULL,
+		generated BOOLEAN NOT NULL,
+		PRIMARY KEY (short, domain)
     );
 	`,
 
@@ -219,6 +225,8 @@ func main() {
 	CREATE TABLE IF NOT EXISTS links_history (
 		short VARCHAR(100),
 		long TEXT NOT NULL,
+		domain VARCHAR(255) NOT NULL,
+		generated BOOLEAN NOT NULL,
 		until TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 	);
 	`,
@@ -226,23 +234,25 @@ func main() {
 		`
 	CREATE OR REPLACE FUNCTION update_link(
 		_short VARCHAR(100),
-		_long TEXT
+		_long TEXT,
+		_domain VARCHAR(255),
+		_generated BOOLEAN
 	) RETURNS void AS $$
 	DECLARE
 		old RECORD;
 	BEGIN
-		SELECT * INTO old FROM links WHERE short = _short;
+		SELECT * INTO old FROM links WHERE short = _short AND domain = _domain;
 
 		IF old IS NOT NULL THEN
-			INSERT INTO links_history (short, long)
-			VALUES (old.short, old.long);
+			INSERT INTO links_history (short, long, domain, generated)
+			VALUES (old.short, old.long, old.domain, old.generated);
 
 			UPDATE links
-			SET long = _long
-			WHERE short = _short;
+			SET long = _long, generated = _generated
+			WHERE short = _short AND domain = _domain;
 		ELSE
-			INSERT INTO links (short, long)
-			VALUES (_short, _long);
+			INSERT INTO links (short, long, domain, generated)
+			VALUES (_short, _long, _domain, _generated);
 		END IF;
 	END;
 	$$ LANGUAGE plpgsql;
