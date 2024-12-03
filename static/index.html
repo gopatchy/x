@@ -224,9 +224,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('short').setAttribute('label', `${window.location.host}/`);
 
-    document.getElementById('short').addEventListener('sl-input', () => {
+    let shortPaste = false;
+
+    document.getElementById('short').addEventListener('sl-input', async () => {
         clearAlerts();
         setInputIcons();
+
+        if (shortPaste) {
+            shortPaste = false;
+            await setFromInputs();
+        }
     });
 
     document.getElementById('short').addEventListener('keydown', async (e) => {
@@ -237,7 +244,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('short').addEventListener('paste', async () => {
         if (document.getElementById('long').value != '') {
-            setTimeout(async () => await setFromInputs(), 0);
+            shortPaste = true;
         }
     });
 
@@ -245,10 +252,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         await setFromInputs();
     });
 
+    let longPaste = false;
 
-    document.getElementById('long').addEventListener('sl-input', () => {
+    document.getElementById('long').addEventListener('sl-input', async () => {
         clearAlerts();
         setInputIcons();
+
+        if (longPaste) {
+            longPaste = false;
+            await setFromInputs();
+        }
     });
 
     document.getElementById('long').addEventListener('keydown', async (e) => {
@@ -261,7 +274,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('long').addEventListener('paste', () => {
         if (document.getElementById('short').value != '') {
-            setTimeout(async () => await setFromInputs(), 0);
+            longPaste = true;
         }
     });
 
