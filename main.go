@@ -72,6 +72,7 @@ func NewShortLinks(db *sql.DB, domainAliases map[string]string, writableDomains 
 	sl.mux.HandleFunc("GET /{short}", sl.serveShort)
 	sl.mux.HandleFunc("POST /{$}", sl.serveSet)
 	sl.mux.HandleFunc("QUERY /{$}", sl.serveSuggest)
+	sl.mux.HandleFunc("OPTIONS /{$}", sl.serveOptions)
 
 	return sl, nil
 }
@@ -81,9 +82,9 @@ func (sl *ShortLinks) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sl *ShortLinks) serveRoot(w http.ResponseWriter, r *http.Request) {
-	err := sl.parseForm(r)
+	err := sl.initRequest(w, r)
 	if err != nil {
-		sendError(w, http.StatusBadRequest, "parse form: %s", err)
+		sendError(w, http.StatusBadRequest, "init request: %s", err)
 		return
 	}
 
@@ -108,9 +109,9 @@ func (sl *ShortLinks) serveRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sl *ShortLinks) serveRootWithPath(w http.ResponseWriter, r *http.Request, path string) {
-	err := sl.parseForm(r)
+	err := sl.initRequest(w, r)
 	if err != nil {
-		sendError(w, http.StatusBadRequest, "parse form: %s", err)
+		sendError(w, http.StatusBadRequest, "init request: %s", err)
 		return
 	}
 
@@ -150,9 +151,9 @@ func (sl *ShortLinks) serveShort(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
-	err := sl.parseForm(r)
+	err := sl.initRequest(w, r)
 	if err != nil {
-		sendError(w, http.StatusBadRequest, "parse form: %s", err)
+		sendError(w, http.StatusBadRequest, "init request: %s", err)
 		return
 	}
 
@@ -194,9 +195,9 @@ func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sl *ShortLinks) serveSuggest(w http.ResponseWriter, r *http.Request) {
-	err := sl.parseForm(r)
+	err := sl.initRequest(w, r)
 	if err != nil {
-		sendError(w, http.StatusBadRequest, "parse form: %s", err)
+		sendError(w, http.StatusBadRequest, "init request: %s", err)
 		return
 	}
 
@@ -241,12 +242,23 @@ func (sl *ShortLinks) serveHelp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := sl.help.Execute(w, map[string]any{
-		"host": r.Host,
+		"writeHost": r.Host,
+		"readHost":  sl.getDomain(r.Host),
 	})
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "error executing template: %s", err)
 		return
 	}
+}
+
+func (sl *ShortLinks) serveOptions(w http.ResponseWriter, r *http.Request) {
+	err := sl.initRequest(w, r)
+	if err != nil {
+		sendError(w, http.StatusBadRequest, "init request: %s", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (sl *ShortLinks) genShort(domain string) (string, error) {
@@ -295,7 +307,13 @@ func (sl *ShortLinks) getLong(short, domain string) (string, error) {
 	return long, nil
 }
 
-func (sl *ShortLinks) parseForm(r *http.Request) error {
+func (sl *ShortLinks) initRequest(w http.ResponseWriter, r *http.Request) error {
+	log.Printf("%s %s %s %s %s %#v", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL, r.Form)
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, QUERY, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+
 	defer r.Body.Close()
 
 	err := r.ParseForm()
@@ -325,13 +343,7 @@ func (sl *ShortLinks) parseForm(r *http.Request) error {
 		}
 	}
 
-	sl.logRequest(r)
-
 	return nil
-}
-
-func (sl *ShortLinks) logRequest(r *http.Request) {
-	log.Printf("%s %s %s %s %s %#v", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL, r.Form)
 }
 
 func main() {

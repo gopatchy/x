@@ -26,6 +26,11 @@ br + sl-tag[pill] {
 sl-tag::part(base) {
     user-select: text;
 }
+
+a {
+    color: var(--sl-color-primary-900);
+    text-decoration: none;
+}
         </style>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iMTIwMHB0IiBoZWlnaHQ9IjEyMDBwdCIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgMTIwMCAxMjAwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogPHBhdGggZD0ibTExNC42NiAxMDE0LjdjLTE5LjU0NyAxOS41LTE5LjU0NyA1MS4xODggMCA3MC42ODggMTkuNSAxOS41NDcgNTEuMTg4IDE5LjU0NyA3MC42ODggMGwyNjQuNjYtMjY0LjY2djE3OS4yOWMwIDI3LjYwOSAyMi40MDYgNTAuMDE2IDUwLjAxNiA1MC4wMTZzNDkuOTY5LTIyLjQwNiA0OS45NjktNTAuMDE2di0zMDBjMC0yNy42MDktMjIuMzU5LTQ5Ljk2OS00OS45NjktNDkuOTY5aC0zMDBjLTI3LjYwOSAwLTUwLjAxNiAyMi4zNTktNTAuMDE2IDQ5Ljk2OXMyMi40MDYgNTAuMDE2IDUwLjAxNiA1MC4wMTZoMTc5LjI5eiIgZmlsbD0iI2ZmM2NlZSIvPgogPHBhdGggZD0ibTY5OS45OCAxNTBjMjcuNjA5IDAgNTAuMDE2IDIyLjQwNiA1MC4wMTYgNTAuMDE2djE3OS4yOWwyNjQuNjYtMjY0LjY2YzE5LjUtMTkuNTQ3IDUxLjE4OC0xOS41NDcgNzAuNjg4IDAgMTkuNTQ3IDE5LjUgMTkuNTQ3IDUxLjE4OCAwIDcwLjY4OGwtMjY0LjY2IDI2NC42NmgxNzkuMjljMjcuNjA5IDAgNTAuMDE2IDIyLjQwNiA1MC4wMTYgNTAuMDE2cy0yMi40MDYgNDkuOTY5LTUwLjAxNiA0OS45NjloLTMwMGMtMjcuNjA5IDAtNDkuOTY5LTIyLjM1OS00OS45NjktNDkuOTY5di0zMDBjMC0yNy42MDkgMjIuMzU5LTUwLjAxNiA0OS45NjktNTAuMDE2eiIgZmlsbD0iI2ZmM2NlZSIvPgo8L3N2Zz4K" />
@@ -41,8 +46,6 @@ sl-tag::part(base) {
                 onload="document.documentElement.classList.add('sl-theme-dark');"
                 />
         <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/shoelace-autoloader.js"></script>
-        <script>
-        </script>
     </head>
     <body>
         <div style="width: min(500px, calc(100vw - 10px))">
@@ -50,6 +53,7 @@ sl-tag::part(base) {
 				<sl-tab slot="nav" panel="share">Share</sl-tab>
 				<sl-tab slot="nav" panel="copy">Copy</sl-tab>
                 <sl-tab slot="nav" panel="custom">Custom</sl-tab>
+                <sl-tab slot="nav" panel="browser">Browser</sl-tab>
 
 				<sl-tab-panel name="share">
                     <sl-card class="card-basic">
@@ -66,7 +70,7 @@ sl-tag::part(base) {
 
                     <sl-card class="card-basic">
                         Get contents of
-                        <sl-tag size="small" pill variant="primary">https://{{ .host }}/</sl-tag>
+                        <sl-tag size="small" pill variant="primary">https://{{ .writeHost }}/</sl-tag>
 
                         <sl-divider></sl-divider>
 
@@ -120,7 +124,7 @@ sl-tag::part(base) {
 
                     <sl-card class="card-basic">
                         Get contents of
-                        <sl-tag size="small" pill variant="primary">https://{{ .host }}/</sl-tag>
+                        <sl-tag size="small" pill variant="primary">https://{{ .writeHost }}/</sl-tag>
 
                         <sl-divider></sl-divider>
 
@@ -181,7 +185,7 @@ sl-tag::part(base) {
 
                     <sl-card class="card-basic">
                         Combine
-                        <sl-tag size="small" pill variant="primary">https://{{ .host }}/?long=</sl-tag>
+                        <sl-tag size="small" pill variant="primary">https://{{ .writeHost }}/?long=</sl-tag>
                         <sl-tag size="small" pill variant="primary">URL Encoded Text</sl-tag>
                         <sl-tag size="small" pill variant="neutral">+</sl-tag>
                         with
@@ -194,6 +198,47 @@ sl-tag::part(base) {
                         <sl-tag size="small" pill variant="primary">Combined Text</sl-tag>
                     </sl-card>
 				</sl-tab-panel>
+
+                <sl-tab-panel name="browser">
+                    <sl-card class="card-basic">
+                        Drag links to bookmark bar:
+                        <br />
+                        <br />
+
+                        <sl-tag pill variant="primary">
+                            <a href="javascript:(async function() {
+                                try {
+                                    const response = await fetch('{{ .writeHost }}', {
+                                        method: 'POST',
+                                        headers: {
+                                        'Content-Type': 'application/json'
+                                        },
+                                        body: JSON.stringify({ long: location.href }),
+                                    });
+                                
+                                    if (!response.ok) {
+                                        throw new Error(response.statusText);
+                                    }
+                                
+                                    await navigator.clipboard.writeText((await response.json()).url);
+                                } catch (err) {
+                                    alert(err);
+                                }
+                            })();">{{ .readHost }} (Copy)</a>
+                        </sl-tag>
+                        <br />
+                        <br />
+
+                        <sl-tag pill variant="primary">
+                            <a href="javascript:(async function() {
+                                const params = new URLSearchParams();
+                                params.set('long', location.href);
+
+                                window.open(`https://{{ .writeHost }}/?${params.toString()}`);
+                            })();">{{ .readHost }} (Custom)</a>
+                        </sl-tag>
+                    </sl-card>
+                </sl-tab-panel>
 			</sl-tab-group>
         </div>
     </body>
