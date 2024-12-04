@@ -69,6 +69,7 @@ func NewShortLinks(db *sql.DB, domainAliases map[string]string, writableDomains 
 	}
 
 	sl.mux.HandleFunc("GET /{$}", sl.serveRoot)
+	sl.mux.HandleFunc("GET /_help", sl.serveHelp)
 	sl.mux.HandleFunc("GET /{short}", sl.serveShort)
 	sl.mux.HandleFunc("POST /{$}", sl.serveSet)
 	sl.mux.HandleFunc("QUERY /{$}", sl.serveSuggest)
@@ -135,11 +136,6 @@ func (sl *ShortLinks) serveShort(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL, r.Form)
 
 	short := r.PathValue("short")
-
-	if sl.isWritable(r.Host) && short == "_help" {
-		sl.serveHelp(w, r)
-		return
-	}
 
 	long, err := sl.getLong(short, sl.getDomain(r.Host))
 	if err != nil {
@@ -236,12 +232,18 @@ func (sl *ShortLinks) serveSuggest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sl *ShortLinks) serveHelp(w http.ResponseWriter, r *http.Request) {
+	err := sl.initRequest(w, r)
+	if err != nil {
+		sendError(w, http.StatusBadRequest, "init request: %s", err)
+		return
+	}
+
 	if !sl.isWritable(r.Host) {
 		sendError(w, http.StatusNotFound, "not found")
 		return
 	}
 
-	err := sl.help.Execute(w, map[string]any{
+	err = sl.help.Execute(w, map[string]any{
 		"writeHost": r.Host,
 		"readHost":  sl.getDomain(r.Host),
 	})

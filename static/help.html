@@ -201,31 +201,7 @@ a {
 
                 <sl-tab-panel name="browser">
                     <sl-card class="card-basic">
-                        Drag links to bookmark bar:
-                        <br />
-                        <br />
-
-                        <sl-tag pill variant="primary">
-                            <a href="javascript:(async function() {
-                                try {
-                                    const response = await fetch('https://{{ .writeHost }}/', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json'
-                                        },
-                                        body: JSON.stringify({ long: location.href }),
-                                    });
-                                
-                                    if (!response.ok) {
-                                        throw new Error(response.statusText);
-                                    }
-                                
-                                    await navigator.clipboard.writeText((await response.json()).url);
-                                } catch (err) {
-                                    alert(err);
-                                }
-                            })();">{{ .readHost }} (Copy)</a>
-                        </sl-tag>
+                        Drag link to bookmark bar:
                         <br />
                         <br />
 
@@ -235,7 +211,7 @@ a {
                                 params.set('long', location.href);
 
                                 window.open(`https://{{ .writeHost }}/?${params.toString()}`);
-                            })();">{{ .readHost }} (Custom)</a>
+                            })();">{{ .readHost }}</a>
                         </sl-tag>
                     </sl-card>
                 </sl-tab-panel>
