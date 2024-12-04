@@ -142,9 +142,9 @@ async function set(short, long) {
 
     const data = await resp.json();
     const newShort = data.short;
-    const newDomain = data.domain;
+    const newURL = data.url;
 
-    setShortItem(newShort, newDomain, 'check-square');
+    setShortItem(newShort, newURL, 'check-square');
 
     // Only set the icons if we were actually setting from these inputs
     if (document.getElementById('short').value == short && document.getElementById('long').value == long) {
@@ -155,7 +155,7 @@ async function set(short, long) {
     // Only set the clipboard if the user didn't change the inputs
     if (document.getElementById('short').value == oldShort && document.getElementById('long').value == oldLong) {
         try {
-            await navigator.clipboard.writeText(`${window.location.protocol}//${newDomain}/${newShort}`);
+            await navigator.clipboard.writeText(newURL);
         } catch (err) {
             console.log(err);
         }
@@ -190,7 +190,7 @@ async function set(short, long) {
     }
 }
 
-function setShortItem(short, domain, icon) {
+function setShortItem(short, url, icon) {
     const tree = document.getElementById('tree');
 
     for (const item of tree.children) {
@@ -203,9 +203,9 @@ function setShortItem(short, domain, icon) {
     item.appendChild(document.createElement('sl-icon')).setAttribute('name', icon);
     item.appendChild(document.createTextNode(short));
 
-    if (domain != null) {
+    if (url != null) {
         item.addEventListener('click', () => {
-            navigator.clipboard.writeText(`${window.location.protocol}//${domain}/${short}`);
+            navigator.clipboard.writeText(url);
         });
     }
 

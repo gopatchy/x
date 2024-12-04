@@ -30,6 +30,7 @@ type ShortLinks struct {
 type setResponse struct {
 	Short  string `json:"short"`
 	Domain string `json:"domain"`
+	URL    string `json:"url"`
 }
 
 type suggestResponse struct {
@@ -188,6 +189,7 @@ func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
 	sendJSON(w, setResponse{
 		Short:  short,
 		Domain: sl.getDomain(r.Host),
+		URL:    fmt.Sprintf("https://%s/%s", sl.getDomain(r.Host), short),
 	})
 }
 
