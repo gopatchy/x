@@ -1,0 +1,127 @@
+<!doctype html>
+<html>
+	<head>
+		<style>
+:not(:defined) {
+  visibility: hidden;
+}
+
+body {
+	font: 12px var(--sl-font-mono);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+table {
+    border-spacing: 0;
+    width: 100%;
+}
+
+.bg0 {
+    background-color: var(--sl-color-neutral-50);
+}
+
+.bg1 {
+    background-color: var(--sl-color-neutral-100);
+}
+
+td div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 5px;
+}
+
+td:first-child {
+    padding-right: 10px;
+}
+
+tr:hover {
+    background-color: var(--sl-color-neutral-200);
+}
+
+a {
+    text-decoration: none;
+    color: var(--sl-color-primary-700);
+}
+        </style>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/png" href="_favicon.png" />
+        <link rel="apple-touch-icon" href="_favicon.png" />
+        <link
+				rel="stylesheet"
+				media="(prefers-color-scheme:light)"
+				href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/themes/light.css"
+				/>
+		<link
+				rel="stylesheet"
+				media="(prefers-color-scheme:dark)"
+				href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/themes/dark.css"
+				onload="document.documentElement.classList.add('sl-theme-dark');"
+				/>
+		<script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/shoelace-autoloader.js"></script>
+        <script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('search').addEventListener('sl-input', () => {
+        const search = document.getElementById('search').value;
+        const rows = document.querySelectorAll('tr');
+
+        let i = 0;
+        
+        for (const row of rows) {
+            const short = row.children[0].textContent;
+            const long = row.children[1].textContent;
+
+            console.log(search, short, long);
+
+            if (search == undefined || search == '' || short.includes(search) || long.includes(search)) {
+                row.style.visibility = 'visible';
+                row.classList.remove(`bg${(i + 1) % 2}`);
+                row.classList.add(`bg${i % 2}`);
+                i++;
+            } else {
+                row.style.visibility = 'collapse';
+            }
+        }
+    });
+
+    document.getElementById('search').dispatchEvent(new Event('sl-input'));
+});
+        </script>
+	</head>
+	<body>
+        <div id="container" style="width: min(500px, calc(100vw - 10px))">
+            <sl-input id="search"></sl-input>
+            <br />
+            <br />
+
+            <table>
+                <tbody>
+                    {{ range .links }}
+                    <tr>
+                        <td>
+                            <div>
+                                <a href="{{ .URL }}">{{ .Short }}</a>
+                                <sl-copy-button value="{{ .URL }}" style="color: var(--sl-color-neutral-400);"></sl-copy-button>
+                                <a href="./?short={{ .Short }}">
+                                    <sl-icon name="pencil" style="color: var(--sl-color-neutral-400);"></sl-icon>
+                                </a>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <a href="{{ .Long }}">{{ .Long }}</a>
+                                <sl-copy-button value="{{ .Long }}" style="color: var(--sl-color-neutral-400);"></sl-copy-button>
+                                <a href="./?long={{ .Long }}">
+                                    <sl-icon name="plus-circle" style="color: var(--sl-color-neutral-400);"></sl-icon>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+	</body>
+</html>
