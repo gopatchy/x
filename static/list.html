@@ -110,18 +110,22 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td>
                             <div>
                                 <sl-copy-button value="{{ .URL }}" style="color: var(--sl-color-neutral-400);"></sl-copy-button>
-                                <a href="./?short={{ .Short }}">
-                                    <sl-icon name="pencil" style="color: var(--sl-color-neutral-400);"></sl-icon>
-                                </a>
+                                <sl-tooltip content="Edit">
+                                    <a href="./?short={{ .Short }}">
+                                        <sl-icon name="pencil" label="Edit" style="color: var(--sl-color-neutral-400);"></sl-icon>
+                                    </a>
+                                </sl-tooltip>
                                 <a href="{{ .URL }}" class="short">{{ .Short }}</a>
                             </div>
                         </td>
                         <td>
                             <div>
                                 <sl-copy-button value="{{ .Long }}" style="color: var(--sl-color-neutral-400);"></sl-copy-button>
-                                <a href="./?long={{ .Long }}">
-                                    <sl-icon name="plus-circle" style="color: var(--sl-color-neutral-400);"></sl-icon>
-                                </a>
+                                <sl-tooltip content="Add">
+                                    <a href="./?long={{ .Long }}">
+                                        <sl-icon name="plus-circle" label="Add" style="color: var(--sl-color-neutral-400);"></sl-icon>
+                                    </a>
+                                </sl-tooltip>
                                 <a href="{{ .Long }}" class="long">{{ .Long }}</a>
                             </div>
                         </td>
