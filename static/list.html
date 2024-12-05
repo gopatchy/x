@@ -16,6 +16,7 @@ body {
 table {
     border-spacing: 0;
     width: 100%;
+    table-layout: fixed;
 }
 
 .bg0 {
@@ -31,6 +32,8 @@ td div {
     flex-direction: row;
     align-items: center;
     padding: 5px;
+    overflow: clip;
+    text-wrap: nowrap;
 }
 
 td:first-child {
@@ -111,11 +114,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         </td>
                         <td>
                             <div>
-                                <a href="{{ .Long }}">{{ .Long }}</a>
                                 <sl-copy-button value="{{ .Long }}" style="color: var(--sl-color-neutral-400);"></sl-copy-button>
                                 <a href="./?long={{ .Long }}">
                                     <sl-icon name="plus-circle" style="color: var(--sl-color-neutral-400);"></sl-icon>
                                 </a>
+                                <a href="{{ .Long }}">{{ .Long }}</a>
                             </div>
                         </td>
                     </tr>
