@@ -70,6 +70,7 @@ func NewShortLinks(db *sql.DB, domainAliases map[string]string, writableDomains 
 
 	sl.mux.HandleFunc("GET /{$}", sl.serveRoot)
 	sl.mux.HandleFunc("GET /_help", sl.serveHelp)
+	sl.mux.HandleFunc("GET /_favicon.png", sl.serveFavicon)
 	sl.mux.HandleFunc("GET /{short}", sl.serveShort)
 	sl.mux.HandleFunc("POST /{$}", sl.serveSet)
 	sl.mux.HandleFunc("QUERY /{$}", sl.serveSuggest)
@@ -133,7 +134,11 @@ func (sl *ShortLinks) serveRootWithPath(w http.ResponseWriter, r *http.Request, 
 }
 
 func (sl *ShortLinks) serveShort(w http.ResponseWriter, r *http.Request) {
-	log.Printf("%s %s %s %s %s %s", r.RemoteAddr, r.Method, r.Host, sl.getDomain(r.Host), r.URL, r.Form)
+	err := sl.initRequest(w, r)
+	if err != nil {
+		sendError(w, http.StatusBadRequest, "init request: %s", err)
+		return
+	}
 
 	short := r.PathValue("short")
 
@@ -287,6 +292,17 @@ func (sl *ShortLinks) genShort(domain string) (string, error) {
 	return "", fmt.Errorf("no available short link found")
 }
 
+func (sl *ShortLinks) serveFavicon(w http.ResponseWriter, r *http.Request) {
+	err := sl.initRequest(w, r)
+	if err != nil {
+		sendError(w, http.StatusBadRequest, "init request: %s", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "image/png")
+	http.ServeFile(w, r, "static/favicon.png")
+}
+
 func (sl *ShortLinks) getDomain(host string) string {
 	if alias, ok := sl.domainAliases[host]; ok {
 		return alias
@@ -339,7 +355,6 @@ func (sl *ShortLinks) initRequest(w http.ResponseWriter, r *http.Request) error 
 				}
 
 			default:
-				log.Printf("unknown type: %T", v)
 				r.Form.Set(k, fmt.Sprintf("%v", v))
 			}
 		}
