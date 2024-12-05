@@ -324,6 +324,11 @@ func (sl *ShortLinks) serveList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !sl.isWritable(r.Host) {
+		sendError(w, http.StatusNotFound, "not found")
+		return
+	}
+
 	rows, err := sl.db.Query("SELECT short, long, domain, generated FROM links WHERE domain = $1 ORDER BY short ASC", sl.getDomain(r.Host))
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "select links: %s", err)
