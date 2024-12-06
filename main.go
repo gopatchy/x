@@ -288,9 +288,17 @@ func (sl *ShortLinks) serveSuggest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out.Domain = sl.getDomain(r.Host)
+	send := &suggestResponse{
+		Domain: sl.getDomain(r.Host),
+	}
 
-	sendJSON(w, out)
+	for _, short := range out.Shorts {
+		if short != "" {
+			send.Shorts = append(send.Shorts, strings.ToLower(strings.TrimSpace(short)))
+		}
+	}
+
+	sendJSON(w, send)
 }
 
 func (sl *ShortLinks) serveHelp(w http.ResponseWriter, r *http.Request) {
