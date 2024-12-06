@@ -122,8 +122,6 @@ async function set(short, long) {
     let resp;
 
     try {
-        console.log(short, long);
-
         resp = await fetch('./', {
             method: 'POST',
             headers: {
