@@ -39,26 +39,43 @@ type suggestResponse struct {
 	Domain string   `json:"domain"`
 }
 
-type link struct {
+type linkBase struct {
 	Short     string `json:"short"`
 	Long      string `json:"long"`
 	Domain    string `json:"domain"`
-	URL       string `json:"url"`
 	Generated bool   `json:"generated"`
+	URL       string `json:"url"`
+}
+
+type link struct {
+	linkBase
+
+	History []linkHistory `json:"history"`
+}
+
+type linkHistory struct {
+	linkBase
+
+	Until time.Time `json:"until"`
 }
 
 func NewShortLinks(db *sql.DB, domainAliases map[string]string, writableDomains map[string]bool) (*ShortLinks, error) {
-	tmpl, err := template.New("index.html").ParseFiles("static/index.html")
+	funcMap := template.FuncMap{
+		"lower": strings.ToLower,
+		"join":  strings.Join,
+	}
+
+	tmpl, err := template.New("index.html").Funcs(funcMap).ParseFiles("static/index.html")
 	if err != nil {
 		return nil, fmt.Errorf("static/index.html: %w", err)
 	}
 
-	help, err := template.New("help.html").ParseFiles("static/help.html")
+	help, err := template.New("help.html").Funcs(funcMap).ParseFiles("static/help.html")
 	if err != nil {
 		return nil, fmt.Errorf("static/help.html: %w", err)
 	}
 
-	list, err := template.New("list.html").ParseFiles("static/list.html")
+	list, err := template.New("list.html").Funcs(funcMap).ParseFiles("static/list.html")
 	if err != nil {
 		return nil, fmt.Errorf("static/list.html: %w", err)
 	}
@@ -329,7 +346,34 @@ func (sl *ShortLinks) serveList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := sl.db.Query("SELECT short, long, domain, generated FROM links WHERE domain = $1 ORDER BY short ASC", sl.getDomain(r.Host))
+	rows, err := sl.db.Query(`
+		SELECT
+			short,
+			long,
+			domain,
+			generated,
+			CURRENT_TIMESTAMP as until,
+			0 as is_history
+		FROM links
+		WHERE domain = $1
+
+		UNION ALL
+
+		SELECT
+			short,
+			long,
+			domain,
+			generated,
+			until,
+			1 as is_history
+		FROM links_history
+		WHERE domain = $1
+
+		ORDER BY
+			short ASC,
+			is_history,
+			until DESC
+	`, sl.getDomain(r.Host))
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "select links: %s", err)
 		return
@@ -338,17 +382,25 @@ func (sl *ShortLinks) serveList(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	links := []link{}
+
 	for rows.Next() {
 		link := link{}
-		err := rows.Scan(&link.Short, &link.Long, &link.Domain, &link.Generated)
+		hist := linkHistory{}
+		isHistory := false
+
+		err := rows.Scan(&link.Short, &link.Long, &link.Domain, &link.Generated, &hist.Until, &isHistory)
 		if err != nil {
 			sendError(w, http.StatusInternalServerError, "scan link: %s", err)
 			return
 		}
 
-		link.URL = fmt.Sprintf("https://%s/%s", link.Domain, link.Short)
-
-		links = append(links, link)
+		if !isHistory {
+			link.URL = fmt.Sprintf("https://%s/%s", link.Domain, link.Short)
+			links = append(links, link)
+		} else {
+			hist.linkBase = link.linkBase
+			links[len(links)-1].History = append(links[len(links)-1].History, hist)
+		}
 	}
 
 	err = sl.list.Execute(w, map[string]any{

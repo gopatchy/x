@@ -303,8 +303,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         await setFromInputs();
     });
 
+    if (document.getElementById('long').value == '') {
+        document.getElementById('long').focus();
+    } else {
+        document.getElementById('short').focus();
+    }
 
-    document.getElementById('long').focus();
     setInputIcons();
 });
         </script>

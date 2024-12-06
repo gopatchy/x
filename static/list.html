@@ -13,43 +13,18 @@ body {
 	align-items: center;
 }
 
-table {
-    border-spacing: 0;
-    width: 100%;
-    table-layout: fixed;
-}
-
-.bg0 {
-    background-color: var(--sl-color-neutral-50);
-}
-
-.bg1 {
-    background-color: var(--sl-color-neutral-100);
-}
-
-td div {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding: 5px 5px 5px 0;
-    overflow: clip;
-    text-wrap: nowrap;
-}
-
-td:first-child {
-    padding-right: 10px;
-}
-
-tr:hover {
-    background-color: var(--sl-color-neutral-200);
-}
-
 a {
     text-decoration: none;
     color: var(--sl-color-primary-700);
 }
 
-.long, .short {
+sl-tree-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.short, .long {
     margin-left: 7px;
 }
         </style>
@@ -69,31 +44,29 @@ a {
 				/>
 		<script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/shoelace-autoloader.js"></script>
         <script>
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('search').addEventListener('sl-input', () => {
-        const search = document.getElementById('search').value;
-        const rows = document.querySelectorAll('tr');
+document.addEventListener('DOMContentLoaded', async () => {
+    await Promise.allSettled([
+        customElements.whenDefined('sl-tree'),
+        customElements.whenDefined('sl-tree-item'),
+        customElements.whenDefined('sl-copy-button'),
+        customElements.whenDefined('sl-tooltip'),
+        customElements.whenDefined('sl-icon')
+    ]);
 
-        let i = 0;
+    document.getElementById('search').addEventListener('sl-input', () => {
+        const search = document.getElementById('search').value.toLowerCase();
+        const rows = document.getElementById('links').children;
         
         for (const row of rows) {
-            const short = row.children[0].textContent;
-            const long = row.children[1].textContent;
+            const query = row.getAttribute('data-query');
 
-            console.log(search, short, long);
-
-            if (search == undefined || search == '' || short.includes(search) || long.includes(search)) {
+            if (search == undefined || search == '' || query.includes(search)) {
                 row.style.visibility = 'visible';
-                row.classList.remove(`bg${(i + 1) % 2}`);
-                row.classList.add(`bg${i % 2}`);
-                i++;
             } else {
                 row.style.visibility = 'collapse';
             }
         }
     });
-
-    document.getElementById('search').dispatchEvent(new Event('sl-input'));
 });
         </script>
 	</head>
@@ -103,36 +76,43 @@ document.addEventListener('DOMContentLoaded', () => {
             <br />
             <br />
 
-            <table>
-                <tbody>
-                    {{ range .links }}
-                    <tr>
-                        <td>
-                            <div>
-                                <sl-copy-button value="{{ .URL }}" style="color: var(--sl-color-neutral-400);"></sl-copy-button>
-                                <sl-tooltip content="Edit">
-                                    <a href="./?short={{ .Short }}">
-                                        <sl-icon name="pencil" label="Edit" style="color: var(--sl-color-neutral-400);"></sl-icon>
-                                    </a>
-                                </sl-tooltip>
-                                <a href="{{ .URL }}" class="short">{{ .Short }}</a>
-                            </div>
-                        </td>
-                        <td>
-                            <div>
-                                <sl-copy-button value="{{ .Long }}" style="color: var(--sl-color-neutral-400);"></sl-copy-button>
-                                <sl-tooltip content="Add">
-                                    <a href="./?long={{ .Long }}">
-                                        <sl-icon name="plus-circle" label="Add" style="color: var(--sl-color-neutral-400);"></sl-icon>
-                                    </a>
-                                </sl-tooltip>
-                                <a href="{{ .Long }}" class="long">{{ .Long }}</a>
-                            </div>
-                        </td>
-                    </tr>
+            <sl-tree id="links">
+                {{ range .links }}
+                <sl-tree-item data-query="{{ .Short | lower }}|{{ .Long | lower }}">
+
+                    <sl-copy-button value="{{ .URL }}" style="color: var(--sl-color-neutral-400);"></sl-copy-button>
+                    <sl-tooltip content="Edit">
+                        <a href="./?short={{ .Short }}">
+                            <sl-icon name="pencil" label="Edit" style="color: var(--sl-color-neutral-400);"></sl-icon>
+                        </a>
+                    </sl-tooltip>
+                    <a href="{{ .URL }}" class="short">{{ .Short }}</a>
+
+                    <sl-tree-item>
+                        <sl-copy-button value="{{ .Long }}" style="color: var(--sl-color-neutral-400);"></sl-copy-button>
+                        <sl-tooltip content="Add">
+                            <a href="./?long={{ .Long }}">
+                                <sl-icon name="plus-circle" label="Add" style="color: var(--sl-color-neutral-400);"></sl-icon>
+                            </a>
+                        </sl-tooltip>
+                        <a href="{{ .Long }}" class="long">{{ .Long }}</a>
+                    </sl-tree-item>
+
+                    {{ range .History }}
+                    <sl-tree-item>
+                        <sl-copy-button value="{{ .Long }}" style="color: var(--sl-color-neutral-400);"></sl-copy-button>
+                        <sl-tooltip content="Restore">
+                            <a href="./?short={{ .Short }}&long={{ .Long }}">
+                                <sl-icon name="arrow-counterclockwise" label="Restore" style="color: var(--sl-color-neutral-400);"></sl-icon>
+                            </a>
+                        </sl-tooltip>
+                        <a href="{{ .Long }}" class="long">{{ .Long }}</a>
+                    </sl-tree-item>
                     {{ end }}
-                </tbody>
-            </table>
+
+                </sl-tree-item>
+                {{ end }}
+            </sl-tree>
         </div>
 	</body>
 </html>
