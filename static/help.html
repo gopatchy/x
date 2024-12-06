@@ -55,6 +55,7 @@ a {
 				<sl-tab slot="nav" panel="copy">Copy</sl-tab>
                 <sl-tab slot="nav" panel="custom">Custom</sl-tab>
                 <sl-tab slot="nav" panel="browser">Browser</sl-tab>
+                <sl-tab slot="nav" panel="tools">Tools</sl-tab>
 
 				<sl-tab-panel name="share">
                     <sl-card class="card-basic">
@@ -214,6 +215,12 @@ a {
                                 window.open(`https://{{ .writeHost }}/?${params.toString()}`);
                             })();">{{ .readHost }}</a>
                         </sl-tag>
+                    </sl-card>
+                </sl-tab-panel>
+
+                <sl-tab-panel name="tools">
+                    <sl-card class="card-basic" style="text-align: center;">
+                        <a href="_list"><sl-button variant="primary">List</sl-button></a>
                     </sl-card>
                 </sl-tab-panel>
 			</sl-tab-group>
