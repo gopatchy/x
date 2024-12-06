@@ -62,9 +62,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const query = row.getAttribute('data-query');
 
             if (search == undefined || search == '' || query.includes(search)) {
-                row.style.visibility = 'visible';
+                row.style.display = 'flex';
             } else {
-                row.style.visibility = 'collapse';
+                row.style.display = 'none';
             }
         }
     });
