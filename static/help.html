@@ -211,6 +211,7 @@ a {
                             <a href="javascript:(async function() {
                                 const params = new URLSearchParams();
                                 params.set('long', location.href);
+                                params.set('title', document.title);
 
                                 window.open(`https://{{ .writeHost }}/?${params.toString()}`);
                             })();">{{ .readHost }}</a>

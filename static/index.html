@@ -62,6 +62,8 @@ sl-icon[name="check-square-fill"] {
 				/>
 		<script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.18.0/cdn/shoelace-autoloader.js"></script>
         <script>
+let title = '{{ .title }}';
+
 function setInputIcon(val, icon) {
     if (val.length > 0) {
         icon.setAttribute('name', 'square');
@@ -171,6 +173,10 @@ async function set(short, long) {
         }
     }
 
+    suggest(shorts, title);
+}
+
+async function suggest(shorts, title) {
     try {
         resp = await fetch('./', {
             method: 'QUERY',
@@ -179,6 +185,7 @@ async function set(short, long) {
             },
             body: JSON.stringify({
                 shorts: shorts,
+                title: title,
             }),
         });
     } catch (err) {
@@ -186,7 +193,9 @@ async function set(short, long) {
         return;
     }
 
-    for (const short of (await resp.json()).shorts) {
+    const data = await resp.json();
+
+    for (const short of data.shorts) {
         appendShortItem(short, long);
     }
 }
@@ -275,6 +284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearAlerts();
         setInputIcons();
         document.getElementById('tree').replaceChildren();
+        title = '';
 
         if (longPaste) {
             longPaste = false;
@@ -310,6 +320,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     setInputIcons();
+
+    const short = document.getElementById('short').value;   
+    
+    if (short != '') {
+        suggest([short], title);
+    } else if (title != '') {
+        suggest([], title);
+    }
 });
         </script>
 	</head>

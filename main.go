@@ -26,12 +26,18 @@ type ShortLinks struct {
 
 	domainAliases   map[string]string
 	writableDomains map[string]bool
+	responseFormat  *oaiResponseFormat
 }
 
 type setResponse struct {
 	Short  string `json:"short"`
 	Domain string `json:"domain"`
 	URL    string `json:"url"`
+}
+
+type suggestRequest struct {
+	Shorts []string `json:"shorts,omitempty"`
+	Title  string   `json:"title,omitempty"`
 }
 
 type suggestResponse struct {
@@ -96,6 +102,26 @@ func NewShortLinks(db *sql.DB, domainAliases map[string]string, writableDomains 
 
 		domainAliases:   domainAliases,
 		writableDomains: writableDomains,
+		responseFormat: &oaiResponseFormat{
+			Type: "json_schema",
+			JSONSchema: map[string]any{
+				"name":   "suggest_response",
+				"strict": true,
+				"schema": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"shorts": map[string]any{
+							"type": "array",
+							"items": map[string]any{
+								"type": "string",
+							},
+						},
+					},
+					"required":             []string{"shorts"},
+					"additionalProperties": false,
+				},
+			},
+		},
 	}
 
 	sl.mux.HandleFunc("GET /{$}", sl.serveRoot)
@@ -157,6 +183,7 @@ func (sl *ShortLinks) serveRootWithShort(w http.ResponseWriter, r *http.Request,
 		"short": short,
 		"host":  sl.getDomain(r.Host),
 		"long":  r.Form.Get("long"),
+		"title": r.Form.Get("title"),
 	})
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "error executing template: %s", err)
@@ -238,33 +265,32 @@ func (sl *ShortLinks) serveSuggest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !r.Form.Has("shorts") {
-		sendError(w, http.StatusBadRequest, "shorts= param required")
+	if !r.Form.Has("shorts") && !r.Form.Has("title") {
+		sendError(w, http.StatusBadRequest, "shorts= or title= param required")
 		return
 	}
 
-	user := strings.Join(r.Form["shorts"], "\n")
+	in := suggestRequest{
+		Shorts: r.Form["shorts"],
+		Title:  r.Form.Get("title"),
+	}
 
-	comp, err := sl.oai.completeChat(
-		"You are an assistant helping a user choose useful short names for a URL shortener. The request contains a list recents names chosen by the user, separated by newlines, with the most recent names first. Respond with only a list of possible suggestions for additional short names, separated by newlines. In descending order of preference, suggestions should include: plural/singular variations, 2 and 3 letter abbreivations, conceptual variations, other variations that are likely to be useful. Your bar for suggestions should be relatively high; responding with a shorter list of high quality suggestions is preferred.",
-		user,
+	out := &suggestResponse{}
+
+	err = sl.oai.completeChat(
+		"You are an assistant helping a user choose useful short names for a URL shortener. The request contains JSON object where the optional `shorts` key contains a list of recent names chosen by the user, with the most recent names first, and the optional `title` key contains a title for the URL. Respond with only a JSON object where the `shorts` key contains a list of possible suggestions for additional short names. In descending order of preference, suggestions should include: plural/singular variations, 2 and 3 letter abbreivations, conceptual variations, other variations that are likely to be useful. Your bar for suggestions should be relatively high; responding with a shorter list of high quality suggestions is preferred.",
+		in,
+		sl.responseFormat,
+		out,
 	)
 	if err != nil {
 		sendError(w, http.StatusInternalServerError, "oai.completeChat: %s", err)
 		return
 	}
 
-	shorts := []string{}
-	for _, short := range strings.Split(comp, "\n") {
-		if short != "" {
-			shorts = append(shorts, strings.TrimSpace(short))
-		}
-	}
+	out.Domain = sl.getDomain(r.Host)
 
-	sendJSON(w, suggestResponse{
-		Shorts: shorts,
-		Domain: sl.getDomain(r.Host),
-	})
+	sendJSON(w, out)
 }
 
 func (sl *ShortLinks) serveHelp(w http.ResponseWriter, r *http.Request) {

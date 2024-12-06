@@ -15,8 +15,14 @@ type oaiClient struct {
 }
 
 type oaiRequest struct {
-	Model    string       `json:"model"`
-	Messages []oaiMessage `json:"messages"`
+	Model          string             `json:"model"`
+	Messages       []oaiMessage       `json:"messages"`
+	ResponseFormat *oaiResponseFormat `json:"response_format"`
+}
+
+type oaiResponseFormat struct {
+	Type       string                 `json:"type"`
+	JSONSchema map[string]interface{} `json:"json_schema"`
 }
 
 type oaiMessage struct {
@@ -48,23 +54,28 @@ func newOAIClientFromEnv() (*oaiClient, error) {
 	return newOAIClient(apiKey), nil
 }
 
-func (oai *oaiClient) completeChat(system, user string) (string, error) {
-	buf := &bytes.Buffer{}
-	err := json.NewEncoder(buf).Encode(&oaiRequest{
+func (oai *oaiClient) completeChat(system string, in any, responseFormat *oaiResponseFormat, out any) error {
+	user, err := json.Marshal(in)
+	if err != nil {
+		return err
+	}
+
+	reqBody, err := json.Marshal(&oaiRequest{
 		Model: "gpt-4o",
 		Messages: []oaiMessage{
 			{Role: "system", Content: system},
-			{Role: "user", Content: user},
+			{Role: "user", Content: string(user)},
 		},
+		ResponseFormat: responseFormat,
 	})
 
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", buf)
+	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(reqBody))
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oai.apiKey))
@@ -72,23 +83,28 @@ func (oai *oaiClient) completeChat(system, user string) (string, error) {
 
 	resp, err := oai.c.Do(req)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("%s", string(body))
+		return fmt.Errorf("%s", string(body))
 	}
 
 	dec := json.NewDecoder(resp.Body)
-	var res oaiResponse
+	res := &oaiResponse{}
 
-	err = dec.Decode(&res)
+	err = dec.Decode(res)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return res.Choices[0].Message.Content, nil
+	err = json.Unmarshal([]byte(res.Choices[0].Message.Content), out)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
