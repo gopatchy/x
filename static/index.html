@@ -123,7 +123,7 @@ async function set(short, long) {
 
     try {
         console.log(short, long);
-        
+
         resp = await fetch('./', {
             method: 'POST',
             headers: {
@@ -175,10 +175,10 @@ async function set(short, long) {
         }
     }
 
-    suggest(shorts, title);
+    suggest(shorts, long, title);
 }
 
-async function suggest(shorts, title) {
+async function suggest(shorts, long, title) {
     try {
         resp = await fetch('./', {
             method: 'QUERY',
@@ -324,11 +324,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInputIcons();
 
     const short = document.getElementById('short').value;   
-    
+    const long = document.getElementById('long').value;
+
     if (short != '') {
-        suggest([short], title);
+        suggest([short], long, title);
     } else if (title != '') {
-        suggest([], title);
+        suggest([], long, title);
     }
 });
         </script>
