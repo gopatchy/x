@@ -152,19 +152,28 @@ func (sl *ShortLinks) serveRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if sl.tryServeDomain(w, r) {
+		return
+	}
+
+	if sl.tryServeFakeRoot(w, r) {
+		return
+	}
+
+	sl.serveRootWithShort(w, r, r.Form.Get("short"))
+}
+
+func (sl *ShortLinks) tryServeFakeRoot(w http.ResponseWriter, r *http.Request) bool {
+	return sl.serveRedirect(w, r, "_root") == nil
+}
+
+func (sl *ShortLinks) tryServeDomain(w http.ResponseWriter, r *http.Request) bool {
 	parts := strings.SplitN(r.Host, ".", 2)
 	if len(parts) != 2 {
-		sl.serveRootWithShort(w, r, r.Form.Get("short"))
-		return
+		return false
 	}
 
-	long, err := sl.getLong(parts[0], sl.getDomain(parts[1]))
-	if err != nil {
-		sl.serveRootWithShort(w, r, r.Form.Get("short"))
-		return
-	}
-
-	http.Redirect(w, r, long, http.StatusTemporaryRedirect)
+	return sl.serveRedirect(w, r, parts[0]) == nil
 }
 
 func (sl *ShortLinks) serveRootWithShort(w http.ResponseWriter, r *http.Request, short string) {
@@ -175,7 +184,12 @@ func (sl *ShortLinks) serveRootWithShort(w http.ResponseWriter, r *http.Request,
 	}
 
 	if !sl.isWritable(r.Host) {
-		sendError(w, http.StatusNotFound, "not found")
+		err = sl.serveRedirect(w, r, "_404")
+		if err != nil {
+			sendError(w, http.StatusNotFound, "not found")
+			return
+		}
+
 		return
 	}
 
@@ -200,13 +214,21 @@ func (sl *ShortLinks) serveShort(w http.ResponseWriter, r *http.Request) {
 
 	short := r.PathValue("short")
 
-	long, err := sl.getLong(short, sl.getDomain(r.Host))
+	err = sl.serveRedirect(w, r, short)
 	if err != nil {
 		sl.serveRootWithShort(w, r, short)
 		return
 	}
+}
+
+func (sl *ShortLinks) serveRedirect(w http.ResponseWriter, r *http.Request, short string) error {
+	long, err := sl.getLong(short, sl.getDomain(r.Host))
+	if err != nil {
+		return err
+	}
 
 	http.Redirect(w, r, long, http.StatusTemporaryRedirect)
+	return nil
 }
 
 func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
