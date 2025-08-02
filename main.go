@@ -147,8 +147,10 @@ func (sl *ShortLinks) serveRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	short := strings.ToLower(r.Form.Get("short"))
+
 	if sl.isWritable(r.Host) {
-		sl.serveRootWithShort(w, r, r.Form.Get("short"))
+		sl.serveRootWithShort(w, r, short)
 		return
 	}
 
@@ -160,7 +162,7 @@ func (sl *ShortLinks) serveRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sl.serveRootWithShort(w, r, r.Form.Get("short"))
+	sl.serveRootWithShort(w, r, short)
 }
 
 func (sl *ShortLinks) tryServeFakeRoot(w http.ResponseWriter, r *http.Request) bool {
@@ -173,7 +175,8 @@ func (sl *ShortLinks) tryServeDomain(w http.ResponseWriter, r *http.Request) boo
 		return false
 	}
 
-	return sl.serveRedirect(w, r, parts[0]) == nil
+	short := strings.ToLower(parts[0])
+	return sl.serveRedirect(w, r, short) == nil
 }
 
 func (sl *ShortLinks) serveRootWithShort(w http.ResponseWriter, r *http.Request, short string) {
@@ -212,7 +215,7 @@ func (sl *ShortLinks) serveShort(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	short := r.PathValue("short")
+	short := strings.ToLower(r.PathValue("short"))
 
 	err = sl.serveRedirect(w, r, short)
 	if err != nil {
@@ -243,7 +246,7 @@ func (sl *ShortLinks) serveSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	short := r.Form.Get("short")
+	short := strings.ToLower(r.Form.Get("short"))
 	generated := false
 
 	if short == "" {
@@ -360,7 +363,7 @@ func (sl *ShortLinks) genShort(domain string) (string, error) {
 		b := make([]byte, chars)
 
 		for i := range b {
-			b[i] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"[sl.r.Intn(62)]
+			b[i] = "0123456789abcdefghijklmnopqrstuvwxyz"[sl.r.Intn(62)]
 		}
 
 		short := string(b)
