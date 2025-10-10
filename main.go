@@ -128,7 +128,7 @@ func NewShortLinks(db *sql.DB, domainAliases map[string]string, writableDomains 
 	sl.mux.HandleFunc("GET /_favicon.png", sl.serveFavicon)
 	sl.mux.HandleFunc("GET /_help", sl.serveHelp)
 	sl.mux.HandleFunc("GET /_list", sl.serveList)
-	sl.mux.HandleFunc("GET /{short}", sl.serveShort)
+	sl.mux.HandleFunc("GET /{short...}", sl.serveShort)
 	sl.mux.HandleFunc("POST /{$}", sl.serveSet)
 	sl.mux.HandleFunc("QUERY /{$}", sl.serveSuggest)
 	sl.mux.HandleFunc("OPTIONS /{$}", sl.serveOptions)
